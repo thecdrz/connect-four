@@ -166,7 +166,7 @@ class Connect4Game {
     }
 
     setupEventListeners() {
-        // Step 1: Game mode selection
+        // Step 1: Game mode selection (now unused - kept for potential back navigation)
         document.getElementById('select-new-game').addEventListener('click', () => {
             this.sounds.click.play();
             this.showNameStep('create');
@@ -185,7 +185,7 @@ class Connect4Game {
 
         document.getElementById('back-to-mode').addEventListener('click', () => {
             this.sounds.click.play();
-            this.showGameModeStep();
+            this.hideNameModal();
         });
 
         // Step 3: Room code (join only)
@@ -225,21 +225,17 @@ class Connect4Game {
             }
         });
 
-        // Main game button listeners (outside modal)
+        // Main game button listeners (outside modal) - directly go to name step
         document.getElementById('new-game-btn').addEventListener('click', () => {
             this.sounds.click.play();
             this.showNameModal();
-            setTimeout(() => {
-                this.showNameStep('create');
-            }, 100);
+            this.showNameStep('create');
         });
 
         document.getElementById('join-game-btn').addEventListener('click', () => {
             this.sounds.click.play();
             this.showNameModal();
-            setTimeout(() => {
-                this.showNameStep('join');
-            }, 100);
+            this.showNameStep('join');
         });
 
         // Leaderboard button
@@ -518,8 +514,10 @@ class Connect4Game {
         document.getElementById('player-name').value = '';
         document.getElementById('room-code-input').value = '';
         
-        // Reset to step 1
-        this.showGameModeStep();
+        // Hide all steps when resetting
+        document.getElementById('game-mode-selection').classList.add('hidden');
+        document.getElementById('name-input-step').classList.add('hidden');
+        document.getElementById('room-code-step').classList.add('hidden');
         
         this.pendingAction = null;
     }
