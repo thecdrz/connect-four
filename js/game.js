@@ -499,9 +499,9 @@ class Connect4Game {
 
     // Name modal functions
     showNameModal() {
+        // Always reset modal state first to ensure clean start
+        this.resetModal();
         document.getElementById('name-modal').classList.remove('hidden');
-        document.getElementById('join-room-input').classList.add('hidden');
-        document.getElementById('player-name').focus();
     }
 
     hideNameModal() {
@@ -513,6 +513,10 @@ class Connect4Game {
         // Clear all form inputs
         document.getElementById('player-name').value = '';
         document.getElementById('room-code-input').value = '';
+        
+        // Reset input validation classes
+        document.getElementById('player-name').classList.remove('error', 'success');
+        document.getElementById('room-code-input').classList.remove('error', 'success');
         
         // Hide all steps when resetting
         document.getElementById('game-mode-selection').classList.add('hidden');
