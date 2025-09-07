@@ -8,8 +8,12 @@
 </head>
 <body>
     <div class="container">
+        <div class="logo-section">
+            <img src="assets/logo.png" alt="Connect 4 Logo" class="game-logo" onerror="this.style.display='none'; document.querySelector('.fallback-title').style.display='block';">
+            <h1 class="fallback-title" style="display: none;">Connect 4</h1>
+        </div>
+        
         <header>
-            <h1>Connect 4</h1>
             <div class="game-status">
                 <div id="status">Welcome to Connect 4! Click "New Game" or "Join Game" to start.</div>
                 <div id="room-info"></div>
@@ -88,7 +92,7 @@
                 <div class="controls">
                     <button id="new-game-btn" class="btn">🎯 New Game</button>
                     <button id="join-game-btn" class="btn">🚪 Join Game</button>
-                    <button id="leave-game-btn" class="btn danger hidden">🚺 Leave Game</button>
+                    <button id="leave-game-btn" class="btn danger hidden">🚪 Leave Game</button>
                     <button id="show-leaderboard" class="btn secondary">🏆 Leaderboard</button>
                     <button id="audio-toggle" class="btn secondary small">🔊 Audio: ON</button>
                 </div>

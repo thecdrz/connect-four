@@ -24,6 +24,10 @@ class Connect4Game {
         this.createBoard();
         this.updateStatus('Connecting to server...');
         this.disableChatInput();
+        // Ensure correct button states initially
+        document.getElementById('leave-game-btn').classList.add('hidden');
+        document.getElementById('new-game-btn').classList.remove('hidden');
+        document.getElementById('join-game-btn').classList.remove('hidden');
     }
 
     initializeAudio() {
