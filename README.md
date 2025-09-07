@@ -31,6 +31,14 @@ A real-time, browser-based multiplayer Connect 4 game built with Node.js and Soc
 
 > Tip: The active player's avatar glows. The room code lives in the status panel above the chat so it's easy to copy and share.
 
+## Visuals
+
+### Screenshot
+
+![Game Screenshot](assets/ScreenshotDemo.png)
+
+> Shows desktop layout with board, chat, avatars, invite controls, and status panel.
+
 ## Tech Stack
 
 -   **Frontend**: HTML5, CSS3, Vanilla JavaScript (ES6+)
