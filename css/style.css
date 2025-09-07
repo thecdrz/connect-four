@@ -22,12 +22,12 @@ body {
 
 .logo-section {
     text-align: center;
-    margin-top: 0; /* eliminate extra gap */
-    margin-bottom: 2px; /* minimal spacing below logo */
+    margin-top: 0; /* keep minimal top */
+    margin-bottom: 4px; /* small readable gap below larger logo */
 }
 
 .game-logo {
-    max-height: 330px; /* +10% */
+    max-height: 380px; /* +15% from previous 330px */
     width: auto;
     display: block;
     margin: 0 auto;
@@ -43,7 +43,7 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 4px; /* pull board even closer */
+    margin-bottom: 24px; /* add breathing space between status and board */
 }
 
 h1 {
@@ -364,7 +364,7 @@ main {
     }
     
     .game-logo {
-        max-height: 220px; /* +10% mobile */
+    max-height: 250px; /* scale mobile roughly +15% from 220 */
     }
     
     .fallback-title {
