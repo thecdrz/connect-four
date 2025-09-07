@@ -205,6 +205,17 @@ main {
     background: #7f8c8d;
 }
 
+.btn.danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn.danger:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+}
+
 .btn.small {
     padding: 8px 16px;
     font-size: 0.9em;
@@ -617,6 +628,19 @@ main {
     color: #7f8c8d;
     font-size: 0.85em;
     font-style: italic;
+}
+
+/* Modal buttons layout */
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.modal-buttons .btn {
+    flex: 1;
+    max-width: 200px;
 }
 
 /* Enhanced Leaderboard */

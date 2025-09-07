@@ -88,6 +88,7 @@
                 <div class="controls">
                     <button id="new-game-btn" class="btn">🎯 New Game</button>
                     <button id="join-game-btn" class="btn">🚪 Join Game</button>
+                    <button id="leave-game-btn" class="btn danger hidden">🚺 Leave Game</button>
                     <button id="show-leaderboard" class="btn secondary">🏆 Leaderboard</button>
                     <button id="audio-toggle" class="btn secondary small">🔊 Audio: ON</button>
                 </div>
@@ -141,6 +142,18 @@
                 <!-- Leaderboard will be populated here -->
             </div>
             <button id="leaderboard-close" class="btn">Close</button>
+        </div>
+    </div>
+
+    <!-- Leave Game Confirmation Modal -->
+    <div id="leave-confirmation-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>⚠️ Leave Game?</h2>
+            <p id="leave-message">Are you sure you want to leave the current game?</p>
+            <div class="modal-buttons">
+                <button id="confirm-leave" class="btn danger">Yes, Leave Game</button>
+                <button id="cancel-leave" class="btn secondary">Stay in Game</button>
+            </div>
         </div>
     </div>
 

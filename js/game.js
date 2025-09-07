@@ -90,6 +90,7 @@ class Connect4Game {
             document.getElementById('room-info').textContent = `Room: ${this.gameId}`;
             this.hideNameModal();
             this.enableChatInput();
+            this.showLeaveGameButton();
         });
 
         this.socket.on('gameJoined', (data) => {
@@ -100,6 +101,7 @@ class Connect4Game {
             document.getElementById('room-info').textContent = `Room: ${this.gameId}`;
             this.hideNameModal();
             this.enableChatInput();
+            this.showLeaveGameButton();
         });
 
         this.socket.on('gameStart', (data) => {
@@ -143,6 +145,7 @@ class Connect4Game {
         this.socket.on('playerDisconnected', () => {
             this.gameActive = false;
             this.updateStatus('Opponent disconnected');
+            this.showNewJoinGameButtons();
         });
 
         this.socket.on('playersUpdated', (data) => {
@@ -272,6 +275,23 @@ class Connect4Game {
         // Audio toggle
         document.getElementById('audio-toggle').addEventListener('click', () => {
             this.toggleAudio();
+        });
+
+        // Leave game button
+        document.getElementById('leave-game-btn').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.showLeaveConfirmation();
+        });
+
+        // Leave game confirmation
+        document.getElementById('confirm-leave').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.leaveGame();
+        });
+
+        document.getElementById('cancel-leave').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.hideLeaveConfirmation();
         });
     }
 
@@ -769,6 +789,58 @@ class Connect4Game {
         if (this.audioEnabled) {
             this.sounds.click.play();
         }
+    }
+
+    // Button state management
+    showLeaveGameButton() {
+        document.getElementById('new-game-btn').classList.add('hidden');
+        document.getElementById('join-game-btn').classList.add('hidden');
+        document.getElementById('leave-game-btn').classList.remove('hidden');
+    }
+
+    showNewJoinGameButtons() {
+        document.getElementById('new-game-btn').classList.remove('hidden');
+        document.getElementById('join-game-btn').classList.remove('hidden');
+        document.getElementById('leave-game-btn').classList.add('hidden');
+        
+        // Clear game state
+        this.gameId = null;
+        this.myPlayerNumber = null;
+        this.myPlayerName = null;
+        this.gameActive = false;
+        document.getElementById('room-info').textContent = '';
+        this.disableChatInput();
+    }
+
+    // Leave game confirmation
+    showLeaveConfirmation() {
+        const message = document.getElementById('leave-message');
+        if (this.gameActive) {
+            message.textContent = 'The game is currently in progress. Are you sure you want to leave?';
+        } else {
+            message.textContent = 'Are you sure you want to leave the current game?';
+        }
+        document.getElementById('leave-confirmation-modal').classList.remove('hidden');
+    }
+
+    hideLeaveConfirmation() {
+        document.getElementById('leave-confirmation-modal').classList.add('hidden');
+    }
+
+    leaveGame() {
+        // Disconnect from current game
+        if (this.socket && this.gameId) {
+            this.socket.disconnect();
+            
+            // Reconnect to server but not to game
+            setTimeout(() => {
+                this.socket.connect();
+            }, 100);
+        }
+        
+        this.hideLeaveConfirmation();
+        this.showNewJoinGameButtons();
+        this.updateStatus('Left the game. Click "New Game" or "Join Game" to start playing.');
     }
 }
 
