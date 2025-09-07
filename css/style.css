@@ -140,13 +140,15 @@ main {
 }
 
 .board {
-    background: #2c3e50;
+    /* Experimental themed board */
+    background: #2c3e50 url('../assets/BoardBlue.png') center/cover no-repeat;
     border-radius: 15px;
     padding: 20px;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 10px;
     margin-bottom: 20px;
+    position: relative;
 }
 
 .cell {
@@ -168,11 +170,11 @@ main {
 }
 
 .cell.red {
-    background: #e74c3c;
+    background: #e74c3c url('../assets/RedPiece.png') center/70% no-repeat;
 }
 
 .cell.yellow {
-    background: #f1c40f;
+    background: #f1c40f url('../assets/YellowPiece.png') center/70% no-repeat;
 }
 
 .cell.winning {
