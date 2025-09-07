@@ -21,9 +21,10 @@ body {
 }
 
 .logo-section {
-    text-align: center;
+    text-align: left; /* shift logo left to free space above chat */
     margin-top: 0;
-    margin-bottom: -48px; /* Compensate for logo height increase */
+    margin-bottom: -40px;
+    padding-left: 40px;
 }
 
 .game-logo {
@@ -41,10 +42,7 @@ body {
     margin: 0;
 }
 
-header {
-    text-align: center;
-    margin-bottom: 20px; /* Increased space between status and board */
-}
+header { display: none; }
 
 h1 {
     color: white;
@@ -54,16 +52,20 @@ h1 {
 }
 
 .game-status {
-    background: rgba(255,255,255,0.9);
+    background: #f5f5ff; /* subtle light tint */
+    border: 1px solid #d9dcef; /* soft border */
     border-radius: 10px;
     padding: 15px 14px;
-    margin: 0 auto;
-    max-width: 400px;
-    min-height: 80px; /* Consistent height to prevent board shifting */
+    margin: 0 0 12px 0;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 80px; /* keep previous consistent height */
     display: flex;
     flex-direction: column;
     justify-content: center;
     text-align: center;
+    font-size: 1em;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
 #status {
@@ -81,7 +83,8 @@ main {
     display: flex;
     gap: 30px;
     justify-content: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* REQUIREMENT: keep chat to the right of board on desktop */
+    align-items: stretch; /* stretch sidebar to same height as game-area */
 }
 
 .game-area {
@@ -90,13 +93,14 @@ main {
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     max-width: 700px;
+    flex: 0 0 auto; /* prevent shrinking below natural width */
 }
 
 .players-info {
     display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
-    padding: 0 20px;
+    padding: 0 32px; /* move avatars slightly inward */
 }
 
 .player {
@@ -106,19 +110,28 @@ main {
     font-weight: bold;
 }
 
+/* Player indicators now use character images */
 .player-indicator {
-    width: 30px;
-    height: 30px;
+    width: 44px; /* +15% from 38px */
+    height: 44px;
     border-radius: 50%;
-    border: 3px solid #333;
+    border: 2px solid #222;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 0 4px rgba(0,0,0,0.4);
 }
 
+/* Red player image */
 .player-indicator.red {
-    background-color: #e74c3c;
+    background-image: url('../assets/BenRed.png');
+    background-color: #e74c3c; /* fallback */
 }
 
+/* Yellow player image */
 .player-indicator.yellow {
-    background-color: #f1c40f;
+    background-image: url('../assets/GirlYellow.png');
+    background-color: #f1c40f; /* fallback */
 }
 
 .player.active .player-indicator {
@@ -174,16 +187,19 @@ main {
 
 .column-header {
     grid-row: 1;
-    height: 20px;
     background: transparent;
     cursor: pointer;
     border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 70px; /* match cell width for perfect centering */
+    height: 22px; /* slim header height */
     font-weight: bold;
+    font-size: 13px;
     color: #bdc3c7;
     transition: color 0.3s ease;
+    padding: 0;
 }
 
 .column-header:hover {
@@ -270,9 +286,9 @@ main {
     box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Softened shadow */
     max-width: 480px;
     min-width: 420px;
+    flex: 0 0 420px; /* lock sidebar width so it stays to the right */
     display: flex;
     flex-direction: column;
-    align-self: stretch;
 }
 
 .chat-container, .game-info {
@@ -357,84 +373,80 @@ main {
 
 /* Responsive design */
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-    
-    .game-logo {
-    max-height: 250px; /* scale mobile roughly +15% from 220 */
-    }
-    
-    .fallback-title {
-        font-size: 2em;
-    }
-    
-    h1 {
-        font-size: 2em;
-    }
-    
-    main {
+    .container { padding: 10px; }
+
+    .game-logo { max-height: 250px; /* scale mobile roughly +15% from 220 */ }
+
+    .fallback-title, h1 { font-size: 2em; }
+
+    main { flex-direction: column; align-items: center; }
+
+    .game-status {
+        background: #f5f6ff;
+        border: 2px solid #c9cfea;
+        border-radius: 12px;
+        padding: 18px 18px 14px;
+        margin: 0 0 14px 0;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 90px;
+        display: flex;
         flex-direction: column;
-        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 1em;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     }
-    
-    .game-area {
-        padding: 20px;
+
+    #room-info {
+        margin-top: 8px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        font-size: 0.95em;
     }
-    
-    .board {
-        gap: 8px;
-        padding: 15px;
+
+    #room-info code {
+        font-family: 'Courier New', monospace;
+        background: #fff;
+        padding: 4px 8px;
+        border: 1px solid #ccd2e6;
+        border-radius: 6px;
+        font-size: 1.05em;
+        color: #2c3e50;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
     }
-    
-    .cell {
-        width: 45px;
-        height: 45px;
-    }
-    
-    .players-info {
-        padding: 0 10px;
-    }
-    
-    .sidebar {
-        max-width: 100%;
-        margin-top: 20px;
-        min-width: auto;
-    }
-    
-    /* Mobile Responsiveness for New Features */
-    .chat-messages {
-        height: 150px;
-    }
-    
+
+    .sidebar { max-width: 100%; margin-top: 20px; min-width: auto; }
+
+    /* Mobile adjustments for new features */
+    .chat-messages { height: 150px; }
+
     .leaderboard-header,
     .leaderboard-row {
         grid-template-columns: 50px 1fr 50px 70px;
         gap: 10px;
         padding: 10px;
     }
-    
-    .name-modal-buttons {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .chat-input-container {
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .btn.small {
-        width: 100%;
-    }
+
+    .name-modal-buttons { flex-direction: column; gap: 10px; }
+
+    .chat-input-container { flex-direction: column; gap: 8px; }
+    .btn.small { width: 100%; }
+}
+
+/* Responsive fallback: allow stacking on narrower viewports */
+@media (max-width: 1050px) {
+    main { flex-wrap: wrap; }
+    .sidebar { flex: 1 1 100%; max-width: 100%; min-width: auto; }
 }
 
 /* Chat Styles */
 .chat-container {
-    margin-bottom: 20px;
-    flex-grow: 1;
+    margin-bottom: 12px;
+    flex: 1 1 auto; /* allow chat to grow and fill vertical space */
     display: flex;
     flex-direction: column;
+    min-height: 0; /* enables flex children to shrink properly */
 }
 
 .chat-container h3 {
@@ -445,7 +457,8 @@ main {
 }
 
 .chat-messages {
-    height: 280px;
+    flex: 1 1 auto; /* dynamic height to align chat bottom with board */
+    min-height: 250px; /* baseline height */
     border: 2px solid #ecf0f1;
     border-radius: 10px;
     padding: 15px;
@@ -469,8 +482,22 @@ main {
 }
 
 .chat-message.other {
-    background: #f5f5f5;
+    background: #f2f4f7; /* subtle contrasting tint */
     margin-right: auto;
+    border-bottom-left-radius: 3px;
+    position: relative;
+}
+
+/* Small left accent bar for other player's messages */
+.chat-message.other:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #9aa5b1;
+    border-top-left-radius: 3px;
     border-bottom-left-radius: 3px;
 }
 

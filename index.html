@@ -13,12 +13,7 @@
             <h1 class="fallback-title" style="display: none;">Connect 4</h1>
         </div>
         
-        <header>
-            <div class="game-status">
-                <div id="status">Welcome to Connect 4! Click "New Game" or "Join Game" to start.</div>
-                <div id="room-info"></div>
-            </div>
-        </header>
+    <!-- Status bar moved into sidebar below chat -->
 
         <!-- Player Name Input Modal -->
         <div id="name-modal" class="modal hidden">
@@ -77,11 +72,11 @@
                 <div class="players-info">
                     <div class="player player1">
                         <div class="player-indicator red"></div>
-                        <span id="player1-name">Player 1 (Red)</span>
+                        <span id="player1-name">Player 1</span>
                     </div>
                     <div class="player player2">
                         <div class="player-indicator yellow"></div>
-                        <span id="player2-name">Player 2 (Yellow)</span>
+                        <span id="player2-name">Player 2</span>
                     </div>
                 </div>
 
@@ -100,6 +95,10 @@
             </div>
 
             <div class="sidebar">
+                <div class="game-status">
+                    <div id="status">Welcome to Connect 4! Click "New Game" or "Join Game" to start.</div>
+                    <div id="room-info"></div>
+                </div>
                 <!-- Chat Area -->
                 <div class="chat-container">
                     <h3>Game Chat</h3>
