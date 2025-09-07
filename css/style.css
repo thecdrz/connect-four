@@ -11,6 +11,53 @@ body {
     color: #333;
 }
 
+/* Lobby Panel */
+.lobby-panel {
+    background: #1f1f26;
+    border: 1px solid #2c2c37;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem 0.6rem;
+    margin-bottom: 1rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.lobby-header {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.45rem;
+    color: #b4bccd;
+}
+.lobby-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid #262a33;
+    gap: 0.5rem;
+}
+.lobby-row:last-child { border-bottom: none; }
+.lobby-row .lobby-meta { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.lobby-row .g-id { font-family: 'Courier New', monospace; font-size: 0.7rem; background:#272b35; padding:2px 4px; border-radius:4px; color:#7db2ff; }
+.lobby-row.status-waiting .g-id { color:#7dff9c; }
+.lobby-row .g-host, .lobby-row .g-opponent { max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lobby-row .g-vs { opacity:0.5; }
+.lobby-empty { font-size:0.7rem; color:#666; padding:0.25rem 0; }
+.lobby-actions { display:flex; gap:0.3rem; }
+.btn.tiny { padding:2px 6px; font-size:0.6rem; line-height:1.1; border-radius:4px; }
+.btn.tiny.secondary { background:#293040; }
+.btn.tiny:disabled { opacity:0.45; cursor:default; }
+.watching-tag { font-size:0.55rem; padding:2px 6px; background:#284d7a; border-radius:4px; color:#b4d9ff; letter-spacing:0.05em; }
+.btn.tiny.spectating { background:#1e3a5c; color:#b4d9ff; border:1px solid #2d567f; cursor:default; }
+.btn.tiny.spectating:hover { transform:none; background:#1e3a5c; }
+
+@media (min-width:1051px) {
+  .lobby-panel { font-size:0.7rem; }
+}
+
 /* Theme Tokens */
 :root {
   --brand-start: #5468ef;

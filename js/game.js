@@ -14,6 +14,11 @@ class Connect4Game {
         this.pendingAction = null; // 'create' or 'join'
         this.audioEnabled = true;
         this.sounds = {};
+    // Lobby & Spectator
+    this.lobbyGames = [];
+    this.isSpectator = false;
+    this.spectatingGameId = null;
+    this.playerNameMap = {};
     this.inviteBaseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/i,'');
     this.typingTimeout = null;
     this.iAmTyping = false;
@@ -99,6 +104,8 @@ class Connect4Game {
             this.updateStatus('Disconnected from server');
             this.gameActive = false;
             this.inRoom = false;
+            this.isSpectator = false;
+            this.spectatingGameId = null;
             this.updateControlButtons();
         });
 
@@ -143,30 +150,83 @@ class Connect4Game {
             setTimeout(()=>this.adjustChatHeight(), 30);
         });
 
+        // Lobby updates
+        this.socket.on('lobby:update', (games) => {
+            this.lobbyGames = games;
+            this.renderLobby();
+        });
+
+        // Spectator join
+        this.socket.on('spectatorJoined', (state) => {
+            this.isSpectator = true;
+            this.spectatingGameId = state.gameId;
+            this.gameId = state.gameId; // reuse for board updates
+            this.gameMode = 'online';
+            this.gameActive = state.gameActive;
+            this.board = state.board;
+            this.currentPlayer = state.currentPlayer;
+            this.resetBoard();
+            // Repaint board from state
+            for (let r=0;r<6;r++) {
+                for (let c=0;c<7;c++) {
+                    const v = state.board[r][c];
+                    if (v !== 0) {
+                        const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                        if (cell) cell.classList.add(v===1?'red':'yellow');
+                    }
+                }
+            }
+            // Names
+            const p1Name = state.players[0]?.name || 'Player 1';
+            const p2Name = state.players[1]?.name || 'Player 2';
+            document.getElementById('player1-name').textContent = p1Name;
+            document.getElementById('player2-name').textContent = p2Name;
+            this.playerNameMap[1] = p1Name;
+            this.playerNameMap[2] = p2Name;
+            this.updatePlayerIndicators();
+            this.updateTurnStatus();
+            this.disableChatInput(); // read-only for now
+            // Load recent chat messages in read-only view
+            state.chat.forEach(msg => this.addChatMessage(msg));
+            this.updateControlButtons();
+            const stopBtn = document.getElementById('stop-spectating-btn');
+            if (stopBtn) stopBtn.classList.remove('hidden');
+        });
+
+        this.socket.on('spectateEnded', () => {
+            if (this.isSpectator) this.stopSpectating();
+        });
+
         this.socket.on('moveMade', (data) => {
             this.makeMove(data.col, data.player, true);
         });
 
         this.socket.on('gameWon', (data) => {
             this.gameActive = false;
-            const isWinner = data.winner === this.myPlayerNumber;
             this.highlightWinningCells(data.winningCells);
             const winnerName = data.winnerName || `Player ${data.winner}`;
-            
-            // Play win sound
-            this.sounds.win.play();
-            
-            this.showModal(
-                isWinner ? '🎉 You Won!' : '😔 You Lost!',
-                isWinner ? 
-                    `Congratulations ${winnerName}! You won the game!` : 
-                    `${winnerName} won this game. Better luck next time!`
-            );
+            const spectatorView = this.isSpectator && !this.inRoom;
+            if (spectatorView) {
+                this.showModal('Game Over', `${winnerName} won the game.`);
+            } else {
+                const isWinner = data.winner === this.myPlayerNumber;
+                this.sounds.win.play();
+                this.showModal(
+                    isWinner ? '🎉 You Won!' : '😔 You Lost!',
+                    isWinner ?
+                        `Congratulations ${winnerName}! You won the game!` :
+                        `${winnerName} won this game. Better luck next time!`
+                );
+            }
         });
 
         this.socket.on('gameDraw', () => {
             this.gameActive = false;
-            this.showModal('Game Draw!', "It's a tie! Good game!");
+            if (this.isSpectator && !this.inRoom) {
+                this.showModal('Game Draw!', 'This game ended in a draw.');
+            } else {
+                this.showModal('Game Draw!', "It's a tie! Good game!");
+            }
         });
 
         this.socket.on('playerDisconnected', () => {
@@ -306,6 +366,10 @@ class Connect4Game {
 
         document.getElementById('join-game-btn').addEventListener('click', () => {
             this.sounds.click.play();
+            if (this.inRoom && this.gameMode === 'online') {
+                // Already in an online game; ignore
+                return;
+            }
             if (this.gameMode === 'cpu') {
                 // In CPU mode, this button becomes "Back to Menu"
                 this.resetToLobbyState('Welcome back! Choose a game mode to start playing.');
@@ -325,6 +389,29 @@ class Connect4Game {
         document.getElementById('show-leaderboard').addEventListener('click', () => {
             if (this.socket) {
                 this.socket.emit('getLeaderboard');
+            }
+        });
+
+        // Lobby toggle (repurpose join button long press maybe future). For MVP add a simple clickable area.
+        const roomInfo = document.getElementById('room-info');
+        if (roomInfo) {
+            roomInfo.addEventListener('dblclick', ()=>{
+                // Quick refresh lobby list popup
+                this.requestLobby();
+            });
+        }
+
+        // Delegate clicks for lobby actions (Join / Spectate)
+        document.addEventListener('click', (e)=>{
+            const joinBtn = e.target.closest('[data-join-game-id]');
+            if (joinBtn) {
+                const id = joinBtn.getAttribute('data-join-game-id');
+                if (id) this.quickJoinGame(id);
+            }
+            const specBtn = e.target.closest('[data-spectate-game-id]');
+            if (specBtn) {
+                const id = specBtn.getAttribute('data-spectate-game-id');
+                if (id) this.spectateGame(id);
             }
         });
 
@@ -377,6 +464,17 @@ class Connect4Game {
             this.sounds.click.play();
             this.showLeaveConfirmation();
         });
+
+        // Stop spectating button
+        const stopSpectateBtn = document.getElementById('stop-spectating-btn');
+        if (stopSpectateBtn) {
+            stopSpectateBtn.addEventListener('click', () => {
+                if (this.isSpectator) {
+                    this.sounds.click.play();
+                    this.stopSpectating();
+                }
+            });
+        }
 
         // Leave game confirmation
         document.getElementById('confirm-leave').addEventListener('click', () => {
@@ -517,8 +615,8 @@ class Connect4Game {
             this.isMyTurn = !this.isMyTurn;
         }
 
-        this.updatePlayerIndicators();
-        this.updateStatus(this.isMyTurn ? 'Your turn!' : (this.gameMode === 'cpu' ? 'CPU is thinking...' : "Opponent's turn"));
+    this.updatePlayerIndicators();
+    this.updateTurnStatus();
 
         // Trigger CPU move if it's now its turn
         if (this.gameMode === 'cpu' && !this.isMyTurn) {
@@ -652,7 +750,7 @@ class Connect4Game {
         // Reveal rematch button only for online games (primary positioned right via DOM order)
         const rematchBtn = document.getElementById('rematch-btn');
         if (rematchBtn) {
-            if (this.gameMode === 'online') {
+            if (this.gameMode === 'online' && !this.isSpectator && this.inRoom) {
                 rematchBtn.classList.remove('hidden');
                 rematchBtn.disabled = false;
                 rematchBtn.textContent = '🔄 Rematch';
@@ -849,6 +947,7 @@ class Connect4Game {
                 if (player.number !== this.myPlayerNumber) {
                     this.opponentName = player.name;
                 }
+                this.playerNameMap[player.number] = player.name;
             }
         });
     }
@@ -981,6 +1080,15 @@ class Connect4Game {
             joinBtn.textContent = '🚪 Join Online Game';
             joinBtn.className = 'btn secondary-action';
             leaveBtn.classList.add('hidden');
+            if (!this.isSpectator) {
+                this.requestLobby();
+            }
+        } else if (this.inRoom && this.gameMode === 'online') {
+            // In an online game: hide join & new buttons; ensure leave visible
+            cpuBtn.classList.add('hidden');
+            newBtn.classList.add('hidden');
+            joinBtn.classList.add('hidden');
+            leaveBtn.classList.remove('hidden');
         } else {
             // In online game: hide mode selection, show leave in toolbar
             cpuBtn.classList.add('hidden');
@@ -1022,6 +1130,8 @@ class Connect4Game {
         this.gameId = null;
         this.myPlayerNumber = null;
         this.gameMode = null;
+    this.isSpectator = false;
+    this.spectatingGameId = null;
         // Keep myPlayerName for convenience in modals
         this.inRoom = false;
         this.gameActive = false;
@@ -1035,6 +1145,93 @@ class Connect4Game {
         this.updateControlButtons();
         this.updateStatus(statusMessage || '🎮 Choose a game mode to start playing.');
     this.hideInviteActions();
+    const stopBtn = document.getElementById('stop-spectating-btn');
+    if (stopBtn) stopBtn.classList.add('hidden');
+    }
+
+    /* Lobby methods */
+    requestLobby() {
+        if (!this.socket) return;
+        this.socket.emit('lobby:subscribe');
+    }
+
+    renderLobby() {
+        const containerId = 'lobby-panel';
+        let panel = document.getElementById(containerId);
+        if (!panel) {
+            // Create a lightweight panel under status area (non-intrusive)
+            const sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return;
+            panel = document.createElement('div');
+            panel.id = containerId;
+            panel.className = 'lobby-panel';
+            sidebar.insertBefore(panel, document.getElementById('chat-section'));
+        }
+        if (!this.lobbyGames || this.lobbyGames.length === 0) {
+            panel.innerHTML = '<div class="lobby-empty">No open games. Create one!</div>';
+            return;
+        }
+                        const rows = this.lobbyGames.map(g => {
+                            const joinable = g.status === 'waiting';
+                            const isMyCurrentGame = (this.gameId && g.gameId === this.gameId);
+                            const showJoin = joinable && !this.inRoom && !this.isSpectator; // can't join while in or spectating
+                            let spectateMarkup = '';
+                            if (this.isSpectator) {
+                                if (this.spectatingGameId === g.gameId) {
+                                    spectateMarkup = `<button class=\"btn tiny spectating\" disabled>Spectating</button>`;
+                                } // do not show spectate buttons for other games while currently spectating
+                            } else if (!isMyCurrentGame) {
+                                spectateMarkup = `<button class=\"btn tiny secondary\" data-spectate-game-id=\"${g.gameId}\" ${joinable?'disabled':''}>Spectate</button>`;
+                            }
+                            return `<div class=\"lobby-row status-${g.status}\">
+                                <div class=\"lobby-meta\">
+                                  <span class=\"g-id\">${g.gameId}</span>
+                                  <span class=\"g-host\">${this.escapeHtml(g.host || '—')}</span>
+                                  <span class=\"g-vs\">vs</span>
+                                  <span class=\"g-opponent\">${this.escapeHtml(g.opponent || (joinable?'<em>open</em>':'—'))}</span>
+                                </div>
+                                <div class=\"lobby-actions\">
+                                  ${showJoin ? `<button class=\"btn tiny\" data-join-game-id=\"${g.gameId}\">Join</button>` : ''}
+                                  ${spectateMarkup}
+                                </div>
+                            </div>`;
+                        }).join('');
+        panel.innerHTML = `<div class="lobby-header">Lobby</div>${rows}`;
+    }
+
+    quickJoinGame(gameId) {
+        // Show modal join step prefilled
+        this.showNameModal();
+        this.showNameStep('join');
+        const codeInput = document.getElementById('room-code-input');
+        codeInput.value = gameId;
+        this.validateRoomCodeInput();
+    }
+
+    spectateGame(gameId) {
+        if (!this.socket) return;
+        if (this.inRoom) return; // already playing
+        this.socket.emit('spectateGame', { gameId });
+    }
+
+    stopSpectating() {
+        if (!this.isSpectator) return;
+        const gid = this.spectatingGameId;
+        if (this.socket && gid) this.socket.emit('stopSpectating', { gameId: gid });
+        this.isSpectator = false;
+        this.spectatingGameId = null;
+        this.gameId = null;
+    this.resetBoard();
+        const stopBtn = document.getElementById('stop-spectating-btn');
+        if (stopBtn) stopBtn.classList.add('hidden');
+        if (!this.inRoom) {
+            document.getElementById('player1-name').textContent = 'Player 1';
+            document.getElementById('player2-name').textContent = 'Player 2';
+        }
+        this.updateStatus('Lobby: select a game to Join or Spectate');
+        this.updateControlButtons();
+        this.renderLobby();
+        this.adjustChatHeight();
     }
 
     startCPUGame() {
@@ -1188,6 +1385,26 @@ class Connect4Game {
         }, 1000);
     }
 
+    updateTurnStatus() {
+        if (this.isSpectator) {
+            if (!this.gameActive) {
+                this.updateStatus('👀 Spectating • Game finished');
+                return;
+            }
+            const pName = this.playerNameMap[this.currentPlayer] || (this.currentPlayer===1? 'Red':'Yellow');
+            this.updateStatus(`👀 Spectating • ${this.escapeHtml(pName)}'s turn`);
+            return;
+        }
+        if (this.gameMode === 'cpu') {
+            this.updateStatus(this.isMyTurn ? 'Your turn!' : 'CPU is thinking...');
+            return;
+        }
+        if (this.gameMode === 'online') {
+            this.updateStatus(this.isMyTurn ? 'Your turn!' : "Opponent's turn");
+            return;
+        }
+    }
+
     /* Layout helper: keep chat bottom from extending below board bottom on desktop */
     adjustChatHeight() {
         const desktop = window.innerWidth >= 1051;
@@ -1203,31 +1420,60 @@ class Connect4Game {
 
         const gameArea = document.querySelector('.game-area');
         const sidebar = document.querySelector('.sidebar');
+        const lobbyPanel = document.getElementById('lobby-panel');
         if (!gameArea || !sidebar) return;
-
         const boardHeight = gameArea.offsetHeight; // total left column height
 
-        // Measure sidebar total height with current chat sizing
-        const sidebarRectHeight = sidebar.offsetHeight;
+        // Reset dynamic heights to measure natural layout
+        chatWindow.style.height = '';
+        chatWindow.style.maxHeight = '';
+        if (lobbyPanel) lobbyPanel.style.maxHeight = '';
 
-        // If sidebar already fits within board height, clamp to configured max (CSS var) and exit
-        if (sidebarRectHeight <= boardHeight) {
-            // Respect existing max (from CSS var) but ensure we don't exceed remaining space
-            // Determine available space for chat: boardHeight - (sidebarHeight - chatWindowHeight)
-            const chatCurrent = chatWindow.offsetHeight;
-            const nonChatSpace = sidebarRectHeight - chatCurrent;
-            const available = boardHeight - nonChatSpace - 4; // small buffer
-            const target = Math.min(chatCurrent, available);
+        const minChat = 120;
+        const minLobby = 70;
+
+        const measure = () => ({
+            sidebar: sidebar.offsetHeight,
+            chat: chatWindow.offsetHeight,
+            lobby: lobbyPanel ? lobbyPanel.offsetHeight : 0
+        });
+
+        let sizes = measure();
+
+        if (sizes.sidebar <= boardHeight) {
+            // Fit within board: ensure chat doesn't exceed available remainder
+            const nonChatSpace = sizes.sidebar - sizes.chat;
+            const available = boardHeight - nonChatSpace - 4;
+            const target = Math.min(sizes.chat, available);
             chatWindow.style.maxHeight = target + 'px';
             chatWindow.style.height = target + 'px';
             return;
         }
 
-        // Sidebar is taller than board. Reduce chat window height by the overflow amount.
-        const overflow = sidebarRectHeight - boardHeight;
-        const newHeight = Math.max(160, chatWindow.offsetHeight - overflow - 6); // keep a sensible minimum
-        chatWindow.style.height = newHeight + 'px';
-        chatWindow.style.maxHeight = newHeight + 'px';
+        // First shrink chat down to min
+        let overflow = sizes.sidebar - boardHeight;
+        let chatTarget = Math.max(minChat, sizes.chat - overflow);
+        chatWindow.style.height = chatTarget + 'px';
+        chatWindow.style.maxHeight = chatTarget + 'px';
+        sizes = measure();
+
+        if (sizes.sidebar <= boardHeight) return; // done
+
+        // Still overflowing; shrink lobby panel if present
+        if (lobbyPanel) {
+            overflow = sizes.sidebar - boardHeight;
+            const lobbyTarget = Math.max(minLobby, sizes.lobby - overflow);
+            lobbyPanel.style.maxHeight = lobbyTarget + 'px';
+            sizes = measure();
+        }
+
+        // If still a pixel or two off due to rounding, allow chat slight further shrink
+        if (sizes.sidebar > boardHeight && chatTarget > minChat) {
+            const finalOverflow = sizes.sidebar - boardHeight;
+            chatTarget = Math.max(minChat, chatTarget - finalOverflow);
+            chatWindow.style.height = chatTarget + 'px';
+            chatWindow.style.maxHeight = chatTarget + 'px';
+        }
     }
 }
 

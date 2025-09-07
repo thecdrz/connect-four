@@ -7,6 +7,9 @@ A real-time, browser-based multiplayer Connect 4 game built with Node.js and Soc
 ## Features
 
 - 🎮 **Real-time Multiplayer:** Private online games with low-latency moves via Socket.IO.
+- 🗂️ **Live Lobby:** Auto‑updating list of active games with host/opponent status and join availability.
+- 👀 **Spectator Mode:** Watch any in‑progress game in real time (read‑only chat, live board & turn status).
+- 🚪 **Stop Watching:** Instantly exit a spectated game; board clears and lobby actions return.
 - 🆔 **Prominent Room Code + Invite Links:** Copy the room code or a full auto-join link (includes optional host name).
 - 🔗 **One‑Click Sharing:** Copy Link & Copy Code buttons surface immediately after creating/joining a game.
 - 💬 **In-Game Chat:** Real-time messaging plus a subtle **typing indicator** for better conversational flow.
@@ -16,6 +19,8 @@ A real-time, browser-based multiplayer Connect 4 game built with Node.js and Soc
 - � **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
 - 🗂️ **Name Persistence:** Recently used player name auto-fills when opening an invite link.
     - Note: The invite link includes both `room` and a `host` param. The `host` value is displayed contextually ("Joining <host>'s game") but does not overwrite Player 2's own chosen name.
+- 🛡️ **Integrity Guards:** A single browser tab cannot join/create a second game or self‑occupy both seats; spectators cannot trigger player actions.
+- 🧭 **Adaptive Sidebar Layout:** Dynamic height algorithm prevents chat/lobby from extending below the board on desktop.
 - 🎨 **Modern & Responsive UI:** Board + chat stay side-by-side on desktop; adaptive stacking for tablets & mobile.
 - ✨ **Polished Feedback:** Animated piece drops, winning pulse, hover micro‑interactions, active avatar glow.
 - 🔊 **Sound Effects:** Lightweight generated audio cues (drop, win, connect, chat) with toggle.
@@ -118,6 +123,13 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ### vNext (Current Main)
 #### Added
+- Lobby panel with real-time subscription (Socket event + periodic REST fallback hook ready).
+- Spectator mode with: live board snapshot sync, turn status ("Spectating • <Player>'s turn"), recent chat history (read‑only), and visual “Spectating” state in lobby.
+- Stop Watching control to exit spectator mode (clears board & restores lobby state).
+- Player name map + unified turn status helper (prevents incorrect "Your turn" messaging for spectators).
+- Single‑active‑game guard (server + client) preventing double join / self‑playing.
+- Height management upgrade: lobby panel participates in dynamic sizing; chat shrinks first, then lobby, preserving min dimensions.
+- Neutral spectator game over modals without rematch button; rematch only visible to active players.
 - Invite link system with Copy Link & Copy Code buttons (auto-join via `?room=` + optional `host` param).
 - Name persistence (localStorage) and auto-prefill when opening an invite link.
 - Typing indicator with animated ellipsis in chat.
@@ -128,6 +140,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - Dynamic chat height management script to ensure chat never extends below board on desktop.
 
 #### Changed
+- Spectating hides all other Spectate buttons and replaces the active game's button with a disabled “Spectating” badge.
+- Game Over modal logic refactored: spectators receive neutral text; players retain win/lose phrasing & sound.
 - Enlarged avatars (~+20%) and adjusted spacing; removed legacy color suffixes from names.
 - Modal actions styled for clarity; rematch button uses gradient accent.
 - Column headers centered & slimmed; tightened vertical whitespace for reduced scroll.
@@ -135,6 +149,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - Back button behavior in Join flow: after any failed room code attempt, Back now closes the modal instead of returning to the name step (faster recovery path).
 
 #### Fixed
+- Spectator view incorrectly showing player loss messaging & rematch button (now neutral & hidden).
+- Active Spectate button still visible while already spectating (now replaced with disabled “Spectating” label).
 - CSS media query / brace mismatch that previously broke mobile styles.
 - Layout wrapping issues—chat reliably remains to the right until breakpoint.
 - Rapid successive room creation/join edge cases causing inconsistent button states.
@@ -146,7 +162,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - Experimental themed board/piece sprite test (reverted to cleaner default palette).
 
 #### Upcoming (Backlog / Ideas)
-- Spectator / observer mode.
+- Scroll shadows / subtle fade edges for overflowing lobby & chat.
+- Transition polish on dynamic height changes & lobby row updates.
 - Dark / high-contrast + colorblind accessibility theme.
 - Emoji reactions / lightweight emote bar.
 - Optional QR code generator for invite link.
