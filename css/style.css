@@ -56,9 +56,14 @@ h1 {
 .game-status {
     background: rgba(255,255,255,0.9);
     border-radius: 10px;
-    padding: 10px 14px; /* more compact */
+    padding: 15px 14px;
     margin: 0 auto;
     max-width: 400px;
+    min-height: 80px; /* Consistent height to prevent board shifting */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
 }
 
 #status {
@@ -189,10 +194,11 @@ main {
 
 .controls {
     display: flex;
-    gap: 10px; /* Reduced gap between buttons */
+    gap: 10px;
     justify-content: center;
-    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
-    min-height: 80px; /* Prevent layout shift when buttons change */
+    flex-wrap: wrap;
+    min-height: 50px; /* Reduced to make buttons more consistent */
+    align-items: center; /* Center buttons vertically */
 }
 
 .btn {
@@ -269,7 +275,7 @@ main {
     align-self: stretch;
 }
 
-.chat-container, .game-info, .connection-status {
+.chat-container, .game-info {
     background: white;
     padding: 15px;
     border-radius: 10px;
@@ -306,40 +312,6 @@ main {
     font-weight: bold;
     position: absolute;
     left: 0;
-}
-
-.connection-status {
-    margin-top: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-#connection-indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-}
-
-.connected {
-    background-color: #27ae60;
-}
-
-.disconnected {
-    background-color: #e74c3c;
-}
-
-.connecting {
-    background-color: #f39c12;
-    animation: blink 1s infinite;
-}
-
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0.3; }
 }
 
 /* Modal */

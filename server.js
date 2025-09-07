@@ -339,7 +339,8 @@ io.on('connection', (socket) => {
         socket.playerNumber = playerNumber;
         socket.playerName = playerName.trim();
         
-        socket.emit('gameCreated', { gameId, playerNumber, playerName: playerName.trim() });
+        // Only emit gameCreated with the gameId, addPlayer already handles the rest
+        socket.emit('gameCreated', { gameId });
         console.log(`Game created: ${gameId} by ${playerName}`);
     });
 

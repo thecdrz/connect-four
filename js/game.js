@@ -75,7 +75,7 @@ class Connect4Game {
         
         this.socket.on('connect', () => {
             this.updateConnectionStatus('connected', 'Connected');
-            this.updateStatus('Connected! Click "New Game" or "Join Game" to start playing.');
+            this.updateStatus('🌐 Connected! Choose a game mode to start.');
             this.sounds.connect.play();
             this.inRoom = false; // fresh connection not in a room
             this.gameActive = false;
@@ -92,10 +92,7 @@ class Connect4Game {
 
         this.socket.on('gameCreated', (data) => {
             this.gameId = data.gameId;
-            this.myPlayerNumber = 1;
-            this.myPlayerName = data.playerName;
             this.inRoom = true;
-            // Avoid duplicating room code (shown separately in #room-info)
             this.updateStatus('Game created! Waiting for another player to join...');
             document.getElementById('room-info').textContent = `Room: ${this.gameId}`;
             this.hideNameModal();
@@ -116,8 +113,10 @@ class Connect4Game {
         });
 
         this.socket.on('gameStart', (data) => {
+            this.gameMode = 'online'; // Set game mode for online multiplayer
             this.gameActive = true;
             this.currentPlayer = 1;
+            this.myPlayerNumber = data.playerNumber;
             this.isMyTurn = this.myPlayerNumber === 1;
             this.resetBoard();
             this.updatePlayerIndicators();
@@ -246,14 +245,26 @@ class Connect4Game {
         // Main game button listeners (outside modal) - directly go to name step
         document.getElementById('new-game-btn').addEventListener('click', () => {
             this.sounds.click.play();
-            this.showNameModal();
-            this.showNameStep('create');
+            if (this.gameMode === 'cpu') {
+                // In CPU mode, this button becomes "New CPU Game"
+                this.startCPUGame();
+            } else {
+                // Normal mode: show name modal for online game
+                this.showNameModal();
+                this.showNameStep('create');
+            }
         });
 
         document.getElementById('join-game-btn').addEventListener('click', () => {
             this.sounds.click.play();
-            this.showNameModal();
-            this.showNameStep('join');
+            if (this.gameMode === 'cpu') {
+                // In CPU mode, this button becomes "Back to Menu"
+                this.resetToLobbyState('Welcome back! Choose a game mode to start playing.');
+            } else {
+                // Normal mode: show name modal for joining game
+                this.showNameModal();
+                this.showNameStep('join');
+            }
         });
 
         document.getElementById('cpu-game-btn').addEventListener('click', () => {
@@ -549,11 +560,8 @@ class Connect4Game {
     }
 
     updateConnectionStatus(status, text) {
-        const indicator = document.getElementById('connection-indicator');
-        const statusText = document.getElementById('connection-text');
-        
-        indicator.className = status;
-        statusText.textContent = text;
+        // Connection status now shown only in main header status
+        // This method kept for compatibility but does nothing
     }
 
     showModal(title, message) {
@@ -847,12 +855,28 @@ class Connect4Game {
         const joinBtn = document.getElementById('join-game-btn');
         const leaveBtn = document.getElementById('leave-game-btn');
 
-        if (!this.inRoom) { // Lobby state
+        if (this.gameMode === 'cpu') {
+            // In CPU mode: show a styled "New Game" and "Back to Menu" instead of "Leave Game"
+            cpuBtn.classList.add('hidden');
+            newBtn.classList.remove('hidden');
+            newBtn.textContent = '🔄 New CPU Game';
+            newBtn.className = 'btn secondary'; // Different style for "new game" in CPU mode
+            joinBtn.classList.remove('hidden');
+            joinBtn.textContent = '⬅️ Back to Menu';
+            joinBtn.className = 'btn'; // Standard style for back
+            leaveBtn.classList.add('hidden');
+        } else if (!this.inRoom) { 
+            // Lobby state: restore original labels and styling
             cpuBtn.classList.remove('hidden');
             newBtn.classList.remove('hidden');
-            joinBtn.classList.remove('hidden');
+            newBtn.textContent = '🎯 New Online Game';
+            newBtn.className = 'btn';
+            joinBtn.classList.remove('hidden'); 
+            joinBtn.textContent = '🚪 Join Online Game';
+            joinBtn.className = 'btn';
             leaveBtn.classList.add('hidden');
-        } else { // In a game (online or CPU)
+        } else { 
+            // In online game: show leave button
             cpuBtn.classList.add('hidden');
             newBtn.classList.add('hidden');
             joinBtn.classList.add('hidden');
@@ -903,7 +927,7 @@ class Connect4Game {
         this.currentPlayer = 1;
         this.updatePlayerIndicators();
         this.updateControlButtons();
-        this.updateStatus(statusMessage || 'Click a game mode to start playing.');
+        this.updateStatus(statusMessage || '🎮 Choose a game mode to start playing.');
     }
 
     startCPUGame() {
@@ -919,10 +943,10 @@ class Connect4Game {
         document.getElementById('player2-name').textContent = 'CPU (Yellow)';
         
         this.updatePlayerIndicators();
-        this.updateStatus('You vs. CPU. Your turn!');
+        this.updateStatus('🤖 Playing vs CPU • Your turn!');
         this.updateControlButtons();
         this.disableChatInput(); // No chat in CPU mode
-        document.getElementById('room-info').textContent = 'Mode: Player vs. CPU';
+        document.getElementById('room-info').textContent = 'Single Player vs Easy CPU';
     }
 
     cpuMove() {
