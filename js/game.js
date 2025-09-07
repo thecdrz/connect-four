@@ -583,6 +583,13 @@ class Connect4Game {
         
         cell.classList.add('dropping', colorClass);
         
+        // Remove dropping class after animation completes
+        const handleAnimationEnd = () => {
+            cell.classList.remove('dropping');
+            cell.removeEventListener('animationend', handleAnimationEnd);
+        };
+        cell.addEventListener('animationend', handleAnimationEnd);
+        
         // Play drop sound for local or opponent moves
         if (!isRemoteMove || (this.gameMode === 'online' && player !== this.myPlayerNumber)) {
             this.sounds.drop.play();
@@ -739,7 +746,7 @@ class Connect4Game {
         // Clear visual board
         const cells = document.querySelectorAll('.cell');
         cells.forEach(cell => {
-            cell.classList.remove('red', 'yellow', 'winning');
+            cell.classList.remove('red', 'yellow', 'winning', 'dropping');
         });
     }
 
