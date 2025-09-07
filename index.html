@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <div class="logo-section">
-            <img src="assets/logo.png" alt="Connect 4 Logo" class="game-logo" onerror="this.style.display='none'; document.querySelector('.fallback-title').style.display='block';">
+            <img src="assets/Logo3.png" alt="Connect 4 Logo" class="game-logo" onerror="this.style.display='none'; document.querySelector('.fallback-title').style.display='block';">
             <h1 class="fallback-title" style="display: none;">Connect 4</h1>
         </div>
         
@@ -90,8 +90,9 @@
                 </div>
 
                 <div class="controls">
-                    <button id="new-game-btn" class="btn">🎯 New Game</button>
-                    <button id="join-game-btn" class="btn">🚪 Join Game</button>
+                    <button id="cpu-game-btn" class="btn purple">🤖 Play vs. CPU</button>
+                    <button id="new-game-btn" class="btn">🎯 New Online Game</button>
+                    <button id="join-game-btn" class="btn">🚪 Join Online Game</button>
                     <button id="leave-game-btn" class="btn danger hidden">🚪 Leave Game</button>
                     <button id="show-leaderboard" class="btn secondary">🏆 Leaderboard</button>
                     <button id="audio-toggle" class="btn secondary small">🔊 Audio: ON</button>
@@ -125,6 +126,8 @@
                     <div id="connection-indicator" class="disconnected"></div>
                     <span id="connection-text">Disconnected</span>
                 </div>
+
+                <!-- Jukebox removed -->
             </div>
         </main>
     </div>

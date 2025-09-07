@@ -1,13 +1,13 @@
 {
   "Ben": {
     "wins": 1,
-    "losses": 1,
-    "games": 2
+    "losses": 2,
+    "games": 3
   },
   "Dad": {
-    "wins": 2,
+    "wins": 3,
     "losses": 1,
-    "games": 3
+    "games": 4
   },
   "dasassas": {
     "wins": 0,

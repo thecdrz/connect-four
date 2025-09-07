@@ -192,6 +192,7 @@ main {
     gap: 10px; /* Reduced gap between buttons */
     justify-content: center;
     flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+    min-height: 80px; /* Prevent layout shift when buttons change */
 }
 
 .btn {
@@ -241,21 +242,43 @@ main {
     box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
 }
 
+.btn.purple {
+    background: #8e44ad;
+    color: white;
+}
+
+.btn.purple:hover {
+    background: #732d91;
+}
+
 .btn.small {
     padding: 6px 12px; /* Made audio button smaller */
     font-size: 0.85em;
 }
 
 .sidebar {
-    background: white;
+    background: #f8f9fa; /* Changed from white */
+    border: 1px solid #e9ecef; /* Added a light border */
     border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    padding: 20px; /* Adjusted padding */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Softened shadow */
     max-width: 480px;
     min-width: 420px;
     display: flex;
     flex-direction: column;
     align-self: stretch;
+}
+
+.chat-container, .game-info, .connection-status {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px; /* Reduced from 15px to tighten layout */
+    border: 1px solid #dee2e6;
+}
+
+.sidebar > *:last-child {
+    margin-bottom: 0;
 }
 
 .game-info h3 {
@@ -358,6 +381,8 @@ main {
     font-size: 1.2em;
 }
 
+/* Jukebox Styles removed */
+
 /* Responsive design */
 @media (max-width: 768px) {
     .container {
@@ -404,6 +429,32 @@ main {
         margin-top: 20px;
         min-width: auto;
     }
+    
+    /* Mobile Responsiveness for New Features */
+    .chat-messages {
+        height: 150px;
+    }
+    
+    .leaderboard-header,
+    .leaderboard-row {
+        grid-template-columns: 50px 1fr 50px 70px;
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .name-modal-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .chat-input-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn.small {
+        width: 100%;
+    }
 }
 
 /* Chat Styles */
@@ -428,7 +479,7 @@ main {
     padding: 15px;
     overflow-y: auto;
     background: #fafafa;
-    margin-bottom: 15px;
+    margin-bottom: 10px; /* Reduced from 15px to tighten layout */
     width: 100%;
 }
 
@@ -915,32 +966,4 @@ main {
 .modal-content {
     max-height: 90vh;
     overflow-y: auto;
-}
-
-/* Mobile Responsiveness for New Features */
-@media (max-width: 768px) {
-    .chat-messages {
-        height: 150px;
-    }
-    
-    .leaderboard-header,
-    .leaderboard-row {
-        grid-template-columns: 50px 1fr 50px 70px;
-        gap: 10px;
-        padding: 10px;
-    }
-    
-    .name-modal-buttons {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .chat-input-container {
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .btn.small {
-        width: 100%;
-    }
 }

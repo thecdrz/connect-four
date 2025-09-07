@@ -422,6 +422,29 @@ io.on('connection', (socket) => {
         socket.emit('leaderboard', getLeaderboard());
     });
 
+    // Handle leaving a game
+    socket.on('leaveGame', () => {
+        if (socket.gameId) {
+            const game = games.get(socket.gameId);
+            if (game) {
+                game.removePlayer(socket);
+                
+                // Confirm to the leaving player
+                socket.emit('gameLeft');
+
+                // Clean up if game is now empty
+                if (game.players.length === 0) {
+                    games.delete(socket.gameId);
+                    console.log(`Game removed after player left: ${socket.gameId}`);
+                }
+            }
+            // Clear game association from socket
+            socket.gameId = null;
+            socket.playerNumber = null;
+            socket.playerName = null;
+        }
+    });
+
     // Handle disconnection
     socket.on('disconnect', () => {
         console.log(`Player disconnected: ${socket.id} (${socket.playerName || 'Unknown'})`);

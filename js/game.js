@@ -10,6 +10,7 @@ class Connect4Game {
         this.opponentName = null;
         this.socket = null;
         this.gameId = null;
+        this.gameMode = null; // 'cpu' or 'online'
         this.pendingAction = null; // 'create' or 'join'
         this.audioEnabled = true;
         this.sounds = {};
@@ -125,10 +126,7 @@ class Connect4Game {
         });
 
         this.socket.on('moveMade', (data) => {
-            this.makeMove(data.col, data.player, false);
-            if (data.player !== this.myPlayerNumber) {
-                this.sounds.drop.play();
-            }
+            this.makeMove(data.col, data.player, true);
         });
 
         this.socket.on('gameWon', (data) => {
@@ -173,6 +171,11 @@ class Connect4Game {
 
         this.socket.on('leaderboard', (data) => {
             this.showLeaderboard(data);
+        });
+
+        this.socket.on('gameLeft', () => {
+            this.hideLeaveConfirmation();
+            this.resetToLobbyState('You have left the game.');
         });
 
         this.socket.on('error', (error) => {
@@ -251,6 +254,11 @@ class Connect4Game {
             this.sounds.click.play();
             this.showNameModal();
             this.showNameStep('join');
+        });
+
+        document.getElementById('cpu-game-btn').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.startCPUGame();
         });
 
         // Leaderboard button
@@ -342,15 +350,20 @@ class Connect4Game {
             return;
         }
 
-        // Send move to server
-        this.socket.emit('makeMove', { 
-            gameId: this.gameId, 
-            col: col,
-            player: this.myPlayerNumber
-        });
+        if (this.gameMode === 'online') {
+            // Send move to server for online games
+            this.socket.emit('makeMove', { 
+                gameId: this.gameId, 
+                col: col,
+                player: this.myPlayerNumber
+            });
+        } else if (this.gameMode === 'cpu') {
+            // Handle move locally for CPU games
+            this.makeMove(col, this.myPlayerNumber);
+        }
     }
 
-    makeMove(col, player, isLocalMove = true) {
+    makeMove(col, player, isRemoteMove = false) {
         const row = this.getBottomEmptyRow(col);
         if (row === -1) return false;
 
@@ -361,40 +374,64 @@ class Connect4Game {
         const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
         const colorClass = player === 1 ? 'red' : 'yellow';
         
-        // Add drop animation
         cell.classList.add('dropping', colorClass);
         
-        // Play drop sound for local moves
-        if (isLocalMove) {
+        // Play drop sound for local or opponent moves
+        if (!isRemoteMove || (this.gameMode === 'online' && player !== this.myPlayerNumber)) {
             this.sounds.drop.play();
         }
         
         // Check for win
         if (this.checkWin(row, col, player)) {
+            this.gameActive = false;
             const winningCells = this.getWinningCells(row, col, player);
-            if (isLocalMove) {
+            this.highlightWinningCells(winningCells);
+            
+            if (this.gameMode === 'online' && !isRemoteMove) {
                 this.socket.emit('gameWon', { 
                     gameId: this.gameId, 
                     winner: player,
                     winningCells: winningCells
                 });
+            } else if (this.gameMode === 'cpu') {
+                const isWinner = player === this.myPlayerNumber;
+                this.sounds.win.play();
+                this.showModal(
+                    isWinner ? '🎉 You Won!' : '😔 You Lost!',
+                    isWinner ? 'Congratulations! You beat the CPU.' : 'The CPU won. Better luck next time!'
+                );
             }
             return true;
         }
 
         // Check for draw
         if (this.isBoardFull()) {
-            if (isLocalMove) {
+            this.gameActive = false;
+            if (this.gameMode === 'online' && !isRemoteMove) {
                 this.socket.emit('gameDraw', { gameId: this.gameId });
+            } else if (this.gameMode === 'cpu') {
+                this.showModal('Game Draw!', "It's a tie! Good game!");
             }
             return true;
         }
 
         // Switch turns
         this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-        this.isMyTurn = !this.isMyTurn;
+        
+        if (this.gameMode === 'cpu') {
+            this.isMyTurn = this.currentPlayer === this.myPlayerNumber;
+        } else {
+            // For online games, the turn is simply flipped
+            this.isMyTurn = !this.isMyTurn;
+        }
+
         this.updatePlayerIndicators();
-        this.updateStatus(this.isMyTurn ? 'Your turn!' : "Opponent's turn");
+        this.updateStatus(this.isMyTurn ? 'Your turn!' : (this.gameMode === 'cpu' ? 'CPU is thinking...' : "Opponent's turn"));
+
+        // Trigger CPU move if it's now its turn
+        if (this.gameMode === 'cpu' && !this.isMyTurn) {
+            this.cpuMove();
+        }
 
         return true;
     }
@@ -805,18 +842,18 @@ class Connect4Game {
 
     // Button state management
     updateControlButtons() {
+        const cpuBtn = document.getElementById('cpu-game-btn');
         const newBtn = document.getElementById('new-game-btn');
         const joinBtn = document.getElementById('join-game-btn');
         const leaveBtn = document.getElementById('leave-game-btn');
-        // States:
-        // 1. Not in room: show New & Join only.
-        // 2. In room but game not active (waiting/opponent left): show Leave only.
-        // 3. In active game: show Leave only.
-        if (!this.inRoom) {
+
+        if (!this.inRoom) { // Lobby state
+            cpuBtn.classList.remove('hidden');
             newBtn.classList.remove('hidden');
             joinBtn.classList.remove('hidden');
             leaveBtn.classList.add('hidden');
-        } else {
+        } else { // In a game (online or CPU)
+            cpuBtn.classList.add('hidden');
             newBtn.classList.add('hidden');
             joinBtn.classList.add('hidden');
             leaveBtn.classList.remove('hidden');
@@ -839,33 +876,72 @@ class Connect4Game {
     }
 
     leaveGame() {
-        // Disconnect from current game
-        if (this.socket && this.gameId) {
-            this.socket.disconnect();
-            
-            // Reconnect to server but not to game
-            setTimeout(() => {
-                this.socket.connect();
-            }, 100);
-        }
-        
         this.hideLeaveConfirmation();
-    // Clear game state locally
-    this.gameId = null;
-    this.myPlayerNumber = null;
-    this.myPlayerName = null;
-    this.inRoom = false;
-    this.gameActive = false;
-    document.getElementById('room-info').textContent = '';
-    this.disableChatInput();
-    // Reset board UI & player labels
-    this.resetBoard();
-    document.getElementById('player1-name').textContent = 'Player 1 (Red)';
-    document.getElementById('player2-name').textContent = 'Player 2 (Yellow)';
-    this.currentPlayer = 1;
-    this.updatePlayerIndicators();
-    this.updateControlButtons();
-    this.updateStatus('Left the game. Click "New Game" or "Join Game" to start playing.');
+        if (this.gameMode === 'online' && this.socket && this.gameId) {
+            this.socket.emit('leaveGame');
+        } else {
+            // For CPU games or if not in a room, just reset to lobby
+            this.resetToLobbyState('You have left the game.');
+        }
+    }
+
+    resetToLobbyState(statusMessage) {
+        if (this.gameMode === 'online' && this.socket.disconnected) {
+            this.socket.connect();
+        }
+        this.gameId = null;
+        this.myPlayerNumber = null;
+        this.gameMode = null;
+        // Keep myPlayerName for convenience in modals
+        this.inRoom = false;
+        this.gameActive = false;
+        document.getElementById('room-info').textContent = '';
+        this.disableChatInput();
+        this.resetBoard();
+        document.getElementById('player1-name').textContent = 'Player 1 (Red)';
+        document.getElementById('player2-name').textContent = 'Player 2 (Yellow)';
+        this.currentPlayer = 1;
+        this.updatePlayerIndicators();
+        this.updateControlButtons();
+        this.updateStatus(statusMessage || 'Click a game mode to start playing.');
+    }
+
+    startCPUGame() {
+        this.gameMode = 'cpu';
+        this.gameActive = true;
+        this.inRoom = true; // Use inRoom to manage button visibility
+        this.myPlayerNumber = 1;
+        this.isMyTurn = true;
+        
+        this.resetBoard();
+        
+        document.getElementById('player1-name').textContent = 'You (Red)';
+        document.getElementById('player2-name').textContent = 'CPU (Yellow)';
+        
+        this.updatePlayerIndicators();
+        this.updateStatus('You vs. CPU. Your turn!');
+        this.updateControlButtons();
+        this.disableChatInput(); // No chat in CPU mode
+        document.getElementById('room-info').textContent = 'Mode: Player vs. CPU';
+    }
+
+    cpuMove() {
+        if (!this.gameActive || this.currentPlayer !== 2) return;
+        
+        // Add a delay to make it feel more natural
+        setTimeout(() => {
+            const availableCols = [];
+            for (let col = 0; col < 7; col++) {
+                if (!this.isColumnFull(col)) {
+                    availableCols.push(col);
+                }
+            }
+
+            if (availableCols.length > 0) {
+                const randomCol = availableCols[Math.floor(Math.random() * availableCols.length)];
+                this.makeMove(randomCol, 2); // CPU is player 2
+            }
+        }, 1000);
     }
 }
 
