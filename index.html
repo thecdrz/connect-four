@@ -85,12 +85,16 @@
                 </div>
 
                 <div class="controls">
-                    <button id="cpu-game-btn" class="btn purple">🤖 Play vs. CPU</button>
-                    <button id="new-game-btn" class="btn">🎯 New Online Game</button>
-                    <button id="join-game-btn" class="btn">🚪 Join Online Game</button>
-                    <button id="leave-game-btn" class="btn danger hidden">🚪 Leave Game</button>
-                    <button id="show-leaderboard" class="btn secondary">🏆 Leaderboard</button>
-                    <button id="audio-toggle" class="btn secondary small">🔊 Audio: ON</button>
+                    <div class="main-actions" role="group" aria-label="Primary game mode actions">
+                        <button id="new-game-btn" class="btn primary-action" aria-describedby="status">🎯 New Online Game</button>
+                        <button id="join-game-btn" class="btn secondary-action" aria-describedby="status">🚪 Join Online Game</button>
+                        <button id="cpu-game-btn" class="btn secondary-action" aria-describedby="status">🤖 Play vs CPU</button>
+                    </div>
+                    <div class="utility-toolbar" role="group" aria-label="Utility actions">
+                        <button id="leave-game-btn" class="btn danger toolbar-btn hidden" title="Leave Game">🚪 <span class="label">Leave</span></button>
+                        <button id="show-leaderboard" class="btn ghost toolbar-btn" title="Leaderboard (Top 10)">🏆 <span class="label">Leaderboard</span></button>
+                        <button id="audio-toggle" class="btn ghost toolbar-btn" title="Toggle Audio">🔊 <span class="label audio-state">ON</span></button>
+                    </div>
                 </div>
             </div>
 
@@ -110,8 +114,10 @@
                 <!-- Chat Area -->
                 <div class="chat-container">
                     <h3>Game Chat</h3>
-                    <div id="chat-messages" class="chat-messages">
-                        <!-- Chat messages will appear here -->
+                    <div class="chat-messages-window">
+                        <div id="chat-messages" class="chat-messages">
+                            <!-- Chat messages will appear here -->
+                        </div>
                     </div>
                     <div id="typing-indicator" class="typing-indicator hidden" aria-live="polite"></div>
                     <div class="chat-input-container">
@@ -137,38 +143,48 @@
         </main>
     </div>
 
-    <!-- Game Over Modal -->
-    <div id="modal" class="modal hidden">
-        <div class="modal-content">
-            <h2 id="modal-title">Game Over</h2>
-            <p id="modal-message"></p>
-            <div class="gameover-actions">
-                <button id="rematch-btn" class="btn hidden">🔄 Rematch</button>
-                <button id="modal-close" class="btn secondary">Close</button>
+    <!-- Unified Modal: Game Over / Generic -->
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+        <div class="modal-content modal-base">
+            <header class="modal-header">
+                <h2 id="modal-title">Game Over</h2>
+            </header>
+            <div class="modal-body">
+                <p id="modal-message"></p>
             </div>
+            <footer class="modal-footer" data-footer="game">
+                <button id="modal-close" class="btn ghost">Close</button>
+                <button id="rematch-btn" class="btn primary-action hidden">🔄 Rematch</button>
+            </footer>
         </div>
     </div>
 
-    <!-- Leaderboard Modal -->
-    <div id="leaderboard-modal" class="modal hidden">
-        <div class="modal-content">
-            <h2>🏆 Top 10 Leaderboard</h2>
-            <div id="leaderboard-content">
-                <!-- Leaderboard will be populated here -->
-            </div>
-            <button id="leaderboard-close" class="btn">Close</button>
+    <!-- Unified Modal: Leaderboard -->
+    <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
+        <div class="modal-content modal-base">
+            <header class="modal-header">
+                <h2 id="leaderboard-title">🏆 Top 10 Leaderboard</h2>
+            </header>
+            <div class="modal-body" id="leaderboard-content"></div>
+            <footer class="modal-footer" data-footer="leaderboard">
+                <button id="leaderboard-close" class="btn primary-action">Close</button>
+            </footer>
         </div>
     </div>
 
-    <!-- Leave Game Confirmation Modal -->
-    <div id="leave-confirmation-modal" class="modal hidden">
-        <div class="modal-content">
-            <h2>⚠️ Leave Game?</h2>
-            <p id="leave-message">Are you sure you want to leave the current game?</p>
-            <div class="modal-buttons">
-                <button id="confirm-leave" class="btn danger">Yes, Leave Game</button>
-                <button id="cancel-leave" class="btn secondary">Stay in Game</button>
+    <!-- Unified Modal: Leave Confirmation -->
+    <div id="leave-confirmation-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="leave-title" aria-describedby="leave-message">
+        <div class="modal-content modal-base">
+            <header class="modal-header">
+                <h2 id="leave-title">⚠️ Leave Game?</h2>
+            </header>
+            <div class="modal-body">
+                <p id="leave-message">Are you sure you want to leave the current game?</p>
             </div>
+            <footer class="modal-footer" data-footer="leave">
+                <button id="cancel-leave" class="btn ghost">Stay in Game</button>
+                <button id="confirm-leave" class="btn danger">Leave Game</button>
+            </footer>
         </div>
     </div>
 
