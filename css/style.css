@@ -59,7 +59,7 @@ h1 {
     margin: 0 0 12px 0;
     width: 100%;
     box-sizing: border-box;
-    min-height: 80px; /* keep previous consistent height */
+    height: 130px; /* fixed to prevent layout jumps when dynamic info appears */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -95,10 +95,10 @@ h1 {
 }
 
 main {
-    display: flex;
-    gap: 30px;
+    display: flex; /* base flex; switched to grid on large screens */
+    gap: 24px; /* tightened gap between board and chat */
     justify-content: center;
-    flex-wrap: nowrap; /* REQUIREMENT: keep chat to the right of board on desktop */
+    flex-wrap: nowrap; /* keep chat to the right of board on desktop */
     align-items: stretch; /* stretch sidebar to same height as game-area */
 }
 
@@ -306,9 +306,8 @@ main {
     border-radius: 20px;
     padding: 20px; /* Adjusted padding */
     box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Softened shadow */
-    max-width: 480px;
-    min-width: 420px;
-    flex: 0 0 420px; /* lock sidebar width so it stays to the right */
+    max-width: 450px; /* slightly wider chat column */
+    min-width: 360px; /* keep proportion while allowing wrap */
     display: flex;
     flex-direction: column;
 }
@@ -421,7 +420,7 @@ main {
         margin: 0 0 14px 0;
         width: 100%;
         box-sizing: border-box;
-        min-height: 90px;
+    min-height: 90px; /* allow natural expansion on mobile */
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -469,7 +468,17 @@ main {
 /* Responsive fallback: allow stacking on narrower viewports */
 @media (max-width: 1050px) {
     main { flex-wrap: wrap; }
-    .sidebar { flex: 1 1 100%; max-width: 100%; min-width: auto; }
+    .sidebar { max-width: 100%; min-width: auto; }
+}
+
+/* Desktop layout: slightly adjusted ratio (was 2:1) to give chat more width */
+@media (min-width: 1051px) {
+    main {
+        display: grid;
+    grid-template-columns: 1.95fr 1.05fr; /* board still dominant */
+        align-items: stretch;
+    }
+    .game-area, .sidebar { width: 100%; }
 }
 
 /* Chat Styles */
