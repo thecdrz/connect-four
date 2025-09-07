@@ -744,7 +744,8 @@ class Connect4Game {
         players.forEach(player => {
             const nameElement = document.getElementById(`player${player.number}-name`);
             if (nameElement) {
-                nameElement.textContent = `${player.name} (${player.number === 1 ? 'Red' : 'Yellow'})`;
+                // Removed color suffix for consistency across modes
+                nameElement.textContent = `${player.name}`;
                 if (player.number !== this.myPlayerNumber) {
                     this.opponentName = player.name;
                 }
@@ -922,8 +923,8 @@ class Connect4Game {
         document.getElementById('room-info').textContent = '';
         this.disableChatInput();
         this.resetBoard();
-        document.getElementById('player1-name').textContent = 'Player 1 (Red)';
-        document.getElementById('player2-name').textContent = 'Player 2 (Yellow)';
+    document.getElementById('player1-name').textContent = 'Player 1';
+    document.getElementById('player2-name').textContent = 'Player 2';
         this.currentPlayer = 1;
         this.updatePlayerIndicators();
         this.updateControlButtons();
@@ -939,8 +940,8 @@ class Connect4Game {
         
         this.resetBoard();
         
-        document.getElementById('player1-name').textContent = 'You (Red)';
-        document.getElementById('player2-name').textContent = 'CPU (Yellow)';
+    document.getElementById('player1-name').textContent = 'You';
+    document.getElementById('player2-name').textContent = 'CPU';
         
         this.updatePlayerIndicators();
         this.updateStatus('🤖 Playing vs CPU • Your turn!');
