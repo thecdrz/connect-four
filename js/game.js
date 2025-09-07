@@ -11,6 +11,7 @@ class Connect4Game {
         this.socket = null;
         this.gameId = null;
         this.gameMode = null; // 'cpu' or 'online'
+        this.cpuDifficulty = 'easy'; // 'easy', 'medium', 'hard'
         this.pendingAction = null; // 'create' or 'join'
         this.audioEnabled = true;
         this.sounds = {};
@@ -360,7 +361,7 @@ class Connect4Game {
             this.sounds.click.play();
             if (this.gameMode === 'cpu') {
                 // In CPU mode, this button becomes "New CPU Game"
-                this.startCPUGame();
+                this.showCPUDifficultyModal();
             } else {
                 // Normal mode: show name modal for online game
                 this.showNameModal();
@@ -386,7 +387,27 @@ class Connect4Game {
 
         document.getElementById('cpu-game-btn').addEventListener('click', () => {
             this.sounds.click.play();
-            this.startCPUGame();
+            this.showCPUDifficultyModal();
+        });
+
+        // CPU difficulty selection listeners
+        document.getElementById('cpu-modal-close').addEventListener('click', () => {
+            this.hideCPUDifficultyModal();
+        });
+
+        document.getElementById('cancel-cpu-selection').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.hideCPUDifficultyModal();
+        });
+
+        // Difficulty button listeners
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.sounds.click.play();
+                const difficulty = btn.getAttribute('data-difficulty');
+                this.startCPUGame(difficulty);
+                this.hideCPUDifficultyModal();
+            });
         });
 
         // Leaderboard button
@@ -1038,6 +1059,14 @@ class Connect4Game {
         document.getElementById('leaderboard-modal').classList.add('hidden');
     }
 
+    showCPUDifficultyModal() {
+        document.getElementById('cpu-difficulty-modal').classList.remove('hidden');
+    }
+
+    hideCPUDifficultyModal() {
+        document.getElementById('cpu-difficulty-modal').classList.add('hidden');
+    }
+
     toggleAudio() {
         this.audioEnabled = !this.audioEnabled;
         const button = document.getElementById('audio-toggle');
@@ -1262,8 +1291,9 @@ class Connect4Game {
         this.adjustChatHeight();
     }
 
-    startCPUGame() {
+    startCPUGame(difficulty = 'easy') {
         this.gameMode = 'cpu';
+        this.cpuDifficulty = difficulty;
         this.gameActive = true;
         this.inRoom = true; // Use inRoom to manage button visibility
         this.myPlayerNumber = 1;
@@ -1271,17 +1301,22 @@ class Connect4Game {
         
         this.resetBoard();
         
-    document.getElementById('player1-name').textContent = 'You';
-    document.getElementById('player2-name').textContent = 'CPU';
+        document.getElementById('player1-name').textContent = 'You';
+        const difficultyLabels = {
+            'easy': 'Easy CPU',
+            'medium': 'Medium CPU', 
+            'hard': 'Hard CPU'
+        };
+        document.getElementById('player2-name').textContent = difficultyLabels[difficulty];
         
         this.updatePlayerIndicators();
-        this.updateStatus('🤖 Playing vs CPU • Your turn!');
+        this.updateStatus(`🤖 Playing vs ${difficultyLabels[difficulty]} • Your turn!`);
         this.updateControlButtons();
         this.disableChatInput(); // No chat in CPU mode
-        document.getElementById('room-info').textContent = 'Single Player vs Easy CPU';
+        document.getElementById('room-info').textContent = `Single Player vs ${difficultyLabels[difficulty]}`;
         this.hideInviteActions();
-    const rematchBtn = document.getElementById('rematch-btn');
-    if (rematchBtn) rematchBtn.classList.add('hidden');
+        const rematchBtn = document.getElementById('rematch-btn');
+        if (rematchBtn) rematchBtn.classList.add('hidden');
     }
 
     /* Invite Feature Helpers */
@@ -1406,11 +1441,238 @@ class Connect4Game {
                 }
             }
 
-            if (availableCols.length > 0) {
-                const randomCol = availableCols[Math.floor(Math.random() * availableCols.length)];
-                this.makeMove(randomCol, 2); // CPU is player 2
+            if (availableCols.length === 0) return;
+
+            let chosenCol;
+            
+            switch (this.cpuDifficulty) {
+                case 'easy':
+                    chosenCol = this.getRandomMove(availableCols);
+                    break;
+                case 'medium':
+                    chosenCol = this.getMediumMove(availableCols);
+                    break;
+                case 'hard':
+                    chosenCol = this.getHardMove(availableCols);
+                    break;
+                default:
+                    chosenCol = this.getRandomMove(availableCols);
             }
+
+            this.makeMove(chosenCol, 2); // CPU is player 2
         }, 1000);
+    }
+
+    // Easy difficulty: Random moves
+    getRandomMove(availableCols) {
+        return availableCols[Math.floor(Math.random() * availableCols.length)];
+    }
+
+    // Medium difficulty: Look ahead, block opponent wins, try to win
+    getMediumMove(availableCols) {
+        // First priority: Check if CPU can win
+        for (let col of availableCols) {
+            const row = this.getBottomEmptyRow(col);
+            this.board[row][col] = 2; // Simulate CPU move
+            if (this.checkWin(row, col, 2)) {
+                this.board[row][col] = 0; // Undo simulation
+                return col;
+            }
+            this.board[row][col] = 0; // Undo simulation
+        }
+
+        // Second priority: Block opponent wins
+        for (let col of availableCols) {
+            const row = this.getBottomEmptyRow(col);
+            this.board[row][col] = 1; // Simulate player move
+            if (this.checkWin(row, col, 1)) {
+                this.board[row][col] = 0; // Undo simulation
+                return col;
+            }
+            this.board[row][col] = 0; // Undo simulation
+        }
+
+        // Third priority: Try to create opportunities (center columns preferred)
+        const centerCols = availableCols.filter(col => col >= 2 && col <= 4);
+        if (centerCols.length > 0) {
+            return centerCols[Math.floor(Math.random() * centerCols.length)];
+        }
+
+        // Fallback: Random move
+        return this.getRandomMove(availableCols);
+    }
+
+    // Hard difficulty: Minimax with alpha-beta pruning
+    getHardMove(availableCols) {
+        const depth = 6; // Look ahead 6 moves
+        let bestScore = -Infinity;
+        let bestCol = availableCols[0];
+
+        for (let col of availableCols) {
+            const row = this.getBottomEmptyRow(col);
+            this.board[row][col] = 2; // Simulate CPU move
+            
+            const score = this.minimax(depth - 1, -Infinity, Infinity, false);
+            
+            this.board[row][col] = 0; // Undo simulation
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestCol = col;
+            }
+        }
+
+        return bestCol;
+    }
+
+    // Minimax algorithm with alpha-beta pruning
+    minimax(depth, alpha, beta, isMaximizing) {
+        // Check for terminal states
+        const winner = this.evaluateBoard();
+        if (winner === 2) return 1000 + depth; // CPU wins (prefer quicker wins)
+        if (winner === 1) return -1000 - depth; // Player wins (delay losses)
+        if (this.isBoardFull() || depth === 0) return this.evaluatePosition();
+
+        const availableCols = [];
+        for (let col = 0; col < 7; col++) {
+            if (!this.isColumnFull(col)) {
+                availableCols.push(col);
+            }
+        }
+
+        if (isMaximizing) {
+            let maxScore = -Infinity;
+            for (let col of availableCols) {
+                const row = this.getBottomEmptyRow(col);
+                this.board[row][col] = 2;
+                
+                const score = this.minimax(depth - 1, alpha, beta, false);
+                maxScore = Math.max(score, maxScore);
+                alpha = Math.max(alpha, score);
+                
+                this.board[row][col] = 0;
+                
+                if (beta <= alpha) break; // Alpha-beta pruning
+            }
+            return maxScore;
+        } else {
+            let minScore = Infinity;
+            for (let col of availableCols) {
+                const row = this.getBottomEmptyRow(col);
+                this.board[row][col] = 1;
+                
+                const score = this.minimax(depth - 1, alpha, beta, true);
+                minScore = Math.min(score, minScore);
+                beta = Math.min(beta, score);
+                
+                this.board[row][col] = 0;
+                
+                if (beta <= alpha) break; // Alpha-beta pruning
+            }
+            return minScore;
+        }
+    }
+
+    // Evaluate the current board state (used by minimax)
+    evaluateBoard() {
+        // Check for wins
+        for (let row = 0; row < 6; row++) {
+            for (let col = 0; col < 7; col++) {
+                if (this.board[row][col] !== 0) {
+                    if (this.checkWin(row, col, this.board[row][col])) {
+                        return this.board[row][col];
+                    }
+                }
+            }
+        }
+        return 0; // No winner
+    }
+
+    // Evaluate position strength (used by minimax when no immediate win)
+    evaluatePosition() {
+        let score = 0;
+        
+        // Evaluate all possible 4-piece windows
+        // Horizontal
+        for (let row = 0; row < 6; row++) {
+            for (let col = 0; col < 4; col++) {
+                const window = [
+                    this.board[row][col],
+                    this.board[row][col + 1],
+                    this.board[row][col + 2],
+                    this.board[row][col + 3]
+                ];
+                score += this.evaluateWindow(window);
+            }
+        }
+
+        // Vertical
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 7; col++) {
+                const window = [
+                    this.board[row][col],
+                    this.board[row + 1][col],
+                    this.board[row + 2][col],
+                    this.board[row + 3][col]
+                ];
+                score += this.evaluateWindow(window);
+            }
+        }
+
+        // Diagonal (positive slope)
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 4; col++) {
+                const window = [
+                    this.board[row][col],
+                    this.board[row + 1][col + 1],
+                    this.board[row + 2][col + 2],
+                    this.board[row + 3][col + 3]
+                ];
+                score += this.evaluateWindow(window);
+            }
+        }
+
+        // Diagonal (negative slope)
+        for (let row = 3; row < 6; row++) {
+            for (let col = 0; col < 4; col++) {
+                const window = [
+                    this.board[row][col],
+                    this.board[row - 1][col + 1],
+                    this.board[row - 2][col + 2],
+                    this.board[row - 3][col + 3]
+                ];
+                score += this.evaluateWindow(window);
+            }
+        }
+
+        // Prefer center columns
+        const centerCol = 3;
+        for (let row = 0; row < 6; row++) {
+            if (this.board[row][centerCol] === 2) score += 3;
+            if (this.board[row][centerCol] === 1) score -= 3;
+        }
+
+        return score;
+    }
+
+    // Evaluate a 4-piece window for scoring
+    evaluateWindow(window) {
+        let score = 0;
+        const cpuPieces = window.filter(cell => cell === 2).length;
+        const playerPieces = window.filter(cell => cell === 1).length;
+        const empty = window.filter(cell => cell === 0).length;
+
+        // CPU scoring
+        if (cpuPieces === 4) score += 100;
+        else if (cpuPieces === 3 && empty === 1) score += 10;
+        else if (cpuPieces === 2 && empty === 2) score += 2;
+
+        // Player blocking (negative score for player advantages)
+        if (playerPieces === 4) score -= 100;
+        else if (playerPieces === 3 && empty === 1) score -= 80;
+        else if (playerPieces === 2 && empty === 2) score -= 2;
+
+        return score;
     }
 
     updateTurnStatus() {

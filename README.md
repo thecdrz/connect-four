@@ -16,7 +16,8 @@ A real-time, browser-based multiplayer Connect 4 game built with Node.js and Soc
 - 🔗 **One‑Click Sharing:** Copy Link & Copy Code buttons surface immediately after creating/joining a game.
 - 💬 **In-Game Chat:** Real-time messaging plus a subtle **typing indicator** for better conversational flow.
 - 🧑‍🤝‍🧑 **Character Avatars:** Illustrated player tokens with active-turn glow (accessibility-friendly highlight).
-- 🧠 **CPU Mode:** Quick single-player vs a simple AI when you just want a fast game.
+- 🧠 **CPU Mode:** Single-player with 3 difficulty levels - Easy (random), Medium (strategic), Hard (minimax AI).
+- 🎯 **Adaptive AI:** CPU difficulties scale from beginner-friendly random moves to expert-level minimax algorithm with alpha-beta pruning.
 - 🔄 **Rematch Flow:** Post-game rematch button with vote sync (starts when both players agree).
 - � **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
 - 🗂️ **Name Persistence:** Recently used player name auto-fills when opening an invite link.

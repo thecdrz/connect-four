@@ -90,6 +90,43 @@
                         <button id="join-game-btn" class="btn secondary-action" aria-describedby="status">🚪 Join Online Game</button>
                         <button id="cpu-game-btn" class="btn secondary-action" aria-describedby="status">🤖 Play vs CPU</button>
                     </div>
+                    
+                    <!-- CPU Difficulty Selection Modal -->
+                    <div id="cpu-difficulty-modal" class="modal hidden">
+                        <div class="modal-content">
+                            <button id="cpu-modal-close" class="modal-close-btn">&times;</button>
+                            <h2>🤖 Choose CPU Difficulty</h2>
+                            <p>Select your preferred challenge level</p>
+                            
+                            <div class="difficulty-options">
+                                <button id="easy-cpu" class="btn difficulty-btn" data-difficulty="easy">
+                                    <span class="difficulty-icon">😊</span>
+                                    <div class="difficulty-info">
+                                        <strong>Easy</strong>
+                                        <small>Random moves • Good for beginners</small>
+                                    </div>
+                                </button>
+                                
+                                <button id="medium-cpu" class="btn difficulty-btn" data-difficulty="medium">
+                                    <span class="difficulty-icon">🧠</span>
+                                    <div class="difficulty-info">
+                                        <strong>Medium</strong>
+                                        <small>Smart moves • Blocks & attacks</small>
+                                    </div>
+                                </button>
+                                
+                                <button id="hard-cpu" class="btn difficulty-btn" data-difficulty="hard">
+                                    <span class="difficulty-icon">🔥</span>
+                                    <div class="difficulty-info">
+                                        <strong>Hard</strong>
+                                        <small>Expert AI • Very challenging</small>
+                                    </div>
+                                </button>
+                            </div>
+                            
+                            <button id="cancel-cpu-selection" class="btn btn-outline">← Cancel</button>
+                        </div>
+                    </div>
                     <div class="utility-toolbar" role="group" aria-label="Utility actions">
                         <button id="leave-game-btn" class="btn danger toolbar-btn hidden" title="Leave Game">🚪 <span class="label">Leave</span></button>
                         <button id="show-leaderboard" class="btn ghost toolbar-btn" title="Leaderboard (Top 10)">🏆 <span class="label">Leaderboard</span></button>
