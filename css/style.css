@@ -17,12 +17,12 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2px 20px 16px; /* minimal top padding to pull content upward */
+    padding: 0 20px 16px; /* removed extra top padding to shift content upward */
 }
 
 .logo-section {
     text-align: left; /* shift logo left to free space above chat */
-    margin-top: 0;
+    margin-top: -28px; /* pull page upward */
     margin-bottom: -40px;
     padding-left: 40px;
 }
@@ -403,6 +403,9 @@ main {
 /* Responsive design */
 @media (max-width: 768px) {
     .container { padding: 10px; }
+
+    /* Slightly less aggressive upward shift on small screens */
+    .logo-section { margin-top: -12px; }
 
     .game-logo { max-height: 250px; /* scale mobile roughly +15% from 220 */ }
 
