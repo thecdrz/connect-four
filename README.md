@@ -1,27 +1,32 @@
 # Connect 4 - Online Multiplayer Game
 
-A real-time, browser-based multiplayer Connect 4 game built with Node.js and Socket.IO. This project features a clean user interface, real-time chat, character avatars, and a persistent leaderboard.
+A real-time, browser-based multiplayer Connect 4 game built with Node.js and Socket.IO. This project features a clean user interface, real-time chat (with typing indicator), character avatars, invite links, rematches, and a persistent leaderboard.
 
 **🚀 Live Demo: [cdrz.app](https://cdrz.app)**
 
 ## Features
 
--   🎮 **Real-time Multiplayer:** Play with friends over the internet in private rooms.
--   🆔 **Prominent Room Code Panel:** Easy-to-spot status panel above chat shows connection state and room code.
--   💬 **Game Chat:** Communicate with your opponent in real-time during the game.
--   🧑‍� **Character Avatars:** Custom illustrated avatars replace plain colored discs for player identity.
--   �🏆 **Persistent Leaderboard:** Tracks player wins and win rates.
--   🎨 **Modern & Responsive UI:** Compact desktop layout keeps board and chat side‑by‑side; mobile view stacks cleanly.
--   ✨ **Animated Gameplay:** Smooth piece drop + win highlighting.
--   🔊 **Sound Effects:** Audio cues for game events, with a toggle to mute.
--   ⚙️ **Easy Deployment:** Ready to deploy on modern hosting platforms like Render.
+- 🎮 **Real-time Multiplayer:** Private online games with low-latency moves via Socket.IO.
+- 🆔 **Prominent Room Code + Invite Links:** Copy the room code or a full auto-join link (includes optional host name).
+- 🔗 **One‑Click Sharing:** Copy Link & Copy Code buttons surface immediately after creating/joining a game.
+- 💬 **In-Game Chat:** Real-time messaging plus a subtle **typing indicator** for better conversational flow.
+- 🧑‍🤝‍🧑 **Character Avatars:** Illustrated player tokens with active-turn glow (accessibility-friendly highlight).
+- 🧠 **CPU Mode:** Quick single-player vs a simple AI when you just want a fast game.
+- 🔄 **Rematch Flow:** Post-game rematch button with vote sync (starts when both players agree).
+- � **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
+- 🗂️ **Name Persistence:** Recently used player name auto-fills when opening an invite link.
+- 🎨 **Modern & Responsive UI:** Board + chat stay side-by-side on desktop; adaptive stacking for tablets & mobile.
+- ✨ **Polished Feedback:** Animated piece drops, winning pulse, hover micro‑interactions, active avatar glow.
+- 🔊 **Sound Effects:** Lightweight generated audio cues (drop, win, connect, chat) with toggle.
+- 🛠️ **Straightforward Deployment:** No build step; deploy directly to Render / any Node host.
 
 ## How to Play
 
-1.  **Start a Game**: Click **"New Game"** to create a room.
-2.  **Invite a Friend**: Share the 6-character Room ID with a friend.
-3.  **Join a Game**: Your friend clicks **"Join Game"** and enters the Room ID.
-4.  **Play!**: Take turns dropping pieces. The first to connect four in a row (horizontally, vertically, or diagonally) wins!
+1. **Start a Game**: Click **New Online Game** (or play vs CPU with the CPU button).
+2. **Invite a Friend**: Use Copy Link (auto-join deep link) or Copy Code from the status panel.
+3. **They Join**: Your friend opens the link (room + host pre-filled) or clicks Join Online Game and enters the code.
+4. **Chat & Play**: Turns alternate. First to connect four horizontally, vertically, or diagonally wins.
+5. **Rematch**: After Game Over both players can request a rematch—starts automatically once both vote.
 
 > Tip: The active player's avatar glows. The room code lives in the status panel above the chat so it's easy to copy and share.
 
@@ -94,32 +99,44 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Visuals
 
-| Game Board (Desktop) | Avatars + Status Panel |
-| -------------------- | --------------------- |
-| ![Board](assets/RedPiece.png) | ![Avatars](assets/BenRed.png) |
+### Screenshot
 
-> Replace these placeholder thumbnails with proper screenshots as desired (capture a full in‑game match and lobby state).
+![Game Screenshot](assets/ScreenshotDemo.png)
+
+> Shows desktop layout with board, chat, avatars, invite controls, and status panel.
 
 ## Release Notes
 
-### Added
-- Prominent status / room code panel above chat.
-- Character avatar images for players (BenRed / GirlYellow) with active glow effect.
-- Enlarged and inward-adjusted avatar layout for better visual balance.
-- Centered column headers and tightened vertical spacing to reduce scroll.
-- Chat UI refinements: accent bar for opponent messages, improved contrast.
+### vNext (Current Main)
+#### Added
+- Invite link system with Copy Link & Copy Code buttons (auto-join via `?room=` + optional `host` param).
+- Name persistence (localStorage) and auto-prefill when opening an invite link.
+- Typing indicator with animated ellipsis in chat.
+- Rematch flow: synchronized vote -> automatic board reset + fresh start events.
+- CPU mode (single player) integrated alongside online mode selection.
+- Deep status panel enhancements (visibility, consistent sizing) and inline invite actions.
+- Improved Game Over modal with unified button layout and consistent sizing.
 
-### Fixed
-- CSS structural issue causing stylesheet parsing error (unbalanced mobile @media braces).
-- Ensured desktop layout keeps chat fixed to the right (no unintended wrapping until narrower breakpoint).
+#### Changed
+- Enlarged avatars (~+20%) and adjusted spacing; removed legacy color suffixes from names.
+- Modal actions styled for clarity; rematch button uses gradient accent.
+- Column headers centered & slimmed; tightened vertical whitespace for reduced scroll.
 
-### Changed
-- Logo shifted left to reclaim vertical space.
-- Status panel styling (background tint, shadow, border) for visibility.
-- Increased default avatar size to 44px (+15%).
+#### Fixed
+- CSS media query / brace mismatch that previously broke mobile styles.
+- Layout wrapping issues—chat reliably remains to the right until breakpoint.
+- Rapid successive room creation/join edge cases causing inconsistent button states.
 
-### Upcoming Ideas
-- Spectator mode
-- Dark theme toggle
-- Emoji / reactions in chat
+#### Removed
+- Legacy jukebox/audio UI panel (replaced by simple audio toggle).
+- Experimental themed board/piece sprite test (reverted to cleaner default palette).
+
+#### Upcoming (Backlog / Ideas)
+- Spectator / observer mode.
+- Dark / high-contrast + colorblind accessibility theme.
+- Emoji reactions / lightweight emote bar.
+- Optional QR code generator for invite link.
+- Configurable CPU difficulty levels.
+
+---
 
