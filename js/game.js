@@ -330,9 +330,8 @@ class Connect4Game {
         });
 
         // Invite feature buttons
-        const copyLinkBtn = document.getElementById('copy-invite-link');
-        const copyCodeBtn = document.getElementById('copy-room-code');
-        const shareBtn = document.getElementById('share-invite');
+    const copyLinkBtn = document.getElementById('copy-invite-link');
+    const copyCodeBtn = document.getElementById('copy-room-code');
         if (copyLinkBtn) {
             copyLinkBtn.addEventListener('click', () => {
                 if (!this.gameId) return;
@@ -344,18 +343,6 @@ class Connect4Game {
             copyCodeBtn.addEventListener('click', () => {
                 if (!this.gameId) return;
                 navigator.clipboard.writeText(this.gameId).then(()=>this.showInviteFeedback('Code copied!', true)).catch(()=>this.showInviteFeedback('Copy failed', false));
-            });
-        }
-        if (shareBtn && navigator.share) {
-            shareBtn.classList.remove('hidden');
-            shareBtn.addEventListener('click', async () => {
-                if (!this.gameId) return;
-                try {
-                    await navigator.share({ title: 'Connect 4 Game', text: 'Join my Connect 4 game!', url: this.buildInviteUrl() });
-                    this.showInviteFeedback('Shared!', true);
-                } catch (e) {
-                    // user cancelled or failed
-                }
             });
         }
     }
