@@ -476,8 +476,8 @@ main {
     height: auto;
 }
 
-/* Chess board styles */
-.chess-board {
+/* Checkers board styles */
+.checkers-board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
@@ -491,38 +491,43 @@ main {
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
-.chess-square {
+.checkers-square {
     aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    font-size: 32px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease;
     user-select: none;
 }
 
-.chess-square.light {
+.checkers-square.light {
     background-color: #f0d9b5;
 }
 
-.chess-square.dark {
+.checkers-square.dark {
     background-color: #b58863;
 }
 
-.chess-square:hover {
-    opacity: 0.8;
+.checkers-square.playable {
+    background-color: #8B4513;
 }
 
-.chess-square.selected {
+.checkers-square:hover.playable {
+    transform: scale(1.05);
+}
+
+.checkers-square.selected {
     background-color: #7fa650 !important;
+    transform: scale(1.1);
 }
 
-.chess-square.possible-move {
+.checkers-square.possible-move {
     position: relative;
 }
 
-.chess-square.possible-move::after {
+.checkers-square.possible-move::after {
     content: '';
     position: absolute;
     width: 30%;
@@ -532,28 +537,55 @@ main {
     opacity: 0.8;
 }
 
-.chess-piece {
-    font-size: 28px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+.checkers-piece {
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    border: 2px solid #2c3e50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease;
 }
 
-/* Board visibility control */
-.board.hidden {
-    display: none;
+.checkers-piece.red {
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+    color: white;
 }
 
-/* Responsive chess board */
+.checkers-piece.black {
+    background: linear-gradient(145deg, #2c3e50, #1a252f);
+    color: white;
+}
+
+.checkers-piece.king::before {
+    content: '♔';
+    font-size: 16px;
+}
+
+.checkers-piece:hover {
+    transform: scale(1.1);
+}
+
+.checkers-square.selected {
+    box-shadow: 0 0 0 3px #FFD700;
+    z-index: 10;
+}
+
+/* Responsive checkers board */
 @media (max-width: 768px) {
-    .chess-board {
+    .checkers-board {
         max-width: 320px;
     }
     
-    .chess-square {
-        font-size: 20px;
+    .checkers-square {
+        font-size: 24px;
     }
     
-    .chess-piece {
-        font-size: 20px;
+    .checkers-piece.king::before {
+        font-size: 12px;
     }
 }
 
