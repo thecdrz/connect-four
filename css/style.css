@@ -215,8 +215,8 @@ main {
     border-radius: 20px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    max-width: 350px;
-    min-width: 300px;
+    max-width: 420px;
+    min-width: 380px;
     height: fit-content;
 }
 
@@ -371,13 +371,14 @@ main {
 }
 
 .chat-messages {
-    height: 200px;
+    height: 220px;
     border: 2px solid #ecf0f1;
     border-radius: 10px;
     padding: 15px;
     overflow-y: auto;
     background: #fafafa;
     margin-bottom: 15px;
+    width: 100%;
 }
 
 .chat-message {
@@ -578,6 +579,37 @@ main {
 
 .btn-icon {
     font-size: 1.2em;
+}
+
+/* New step-by-step modal styles */
+.btn-outline {
+    background: transparent;
+    border: 2px solid #bdc3c7;
+    color: #7f8c8d;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-top: 15px;
+}
+
+.btn-outline:hover {
+    border-color: #95a5a6;
+    color: #2c3e50;
+    background: #ecf0f1;
+}
+
+#name-input-step,
+#room-code-step {
+    animation: slideUp 0.3s ease-out;
+}
+
+.input-group small {
+    display: block;
+    margin-top: 5px;
+    color: #7f8c8d;
+    font-size: 0.85em;
+    font-style: italic;
 }
 
 /* Animations */

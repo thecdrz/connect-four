@@ -21,33 +21,50 @@
             <div class="modal-content">
                 <button id="name-modal-close" class="modal-close-btn">&times;</button>
                 <h2 id="modal-title">🎮 Welcome to Connect 4!</h2>
-                <p id="modal-subtitle">Enter your name to get started</p>
+                <p id="modal-subtitle">Choose how you want to play</p>
                 
-                <div class="input-group">
-                    <label for="player-name">Your Name</label>
-                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" required>
-                </div>
-                
-                <div id="room-input-group" class="input-group hidden">
-                    <label for="room-id-input">Room Code</label>
-                    <input type="text" id="room-id-input" placeholder="6-character code" maxlength="6" style="text-transform: uppercase">
-                </div>
-                
-                <div class="action-buttons">
-                    <button id="start-new-game" class="btn btn-primary">
+                <!-- Step 1: Choose game mode -->
+                <div id="game-mode-selection" class="action-buttons">
+                    <button id="select-new-game" class="btn btn-primary">
                         <span class="btn-icon">🎯</span>
-                        Create Game
+                        New Game
                     </button>
-                    <button id="start-join-game" class="btn btn-secondary">
+                    <button id="select-join-game" class="btn btn-secondary">
                         <span class="btn-icon">🚪</span>
                         Join Game
                     </button>
                 </div>
                 
-                <button id="final-action" class="btn btn-success hidden" disabled>
-                    <span class="btn-icon">🎮</span>
-                    <span id="final-action-text">Let's Play!</span>
-                </button>
+                <!-- Step 2: Enter name -->
+                <div id="name-input-step" class="hidden">
+                    <div class="input-group">
+                        <label for="player-name">Your Name</label>
+                        <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" required>
+                    </div>
+                    
+                    <button id="proceed-with-name" class="btn btn-success" disabled>
+                        <span class="btn-icon" id="proceed-icon">🎮</span>
+                        <span id="proceed-text">Begin Game</span>
+                    </button>
+                    
+                    <button id="back-to-mode" class="btn btn-outline">← Back</button>
+                </div>
+                
+                <!-- Step 3: Room code input (only for join) -->
+                <div id="room-code-step" class="hidden">
+                    <div class="input-group">
+                        <label for="room-code-input">Room Code</label>
+                        <input type="text" id="room-code-input" placeholder="Enter 6-character code" maxlength="6" style="text-transform: uppercase">
+                        <small>Ask your friend for the room code they received</small>
+                    </div>
+                    
+                    <button id="connect-to-game" class="btn btn-success" disabled>
+                        <span class="btn-icon">🚀</span>
+                        Connect to Game
+                    </button>
+                    
+                    <button id="back-to-name" class="btn btn-outline">← Back</button>
+                </div>
             </div>
         </div>
 

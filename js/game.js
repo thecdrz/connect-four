@@ -166,52 +166,79 @@ class Connect4Game {
     }
 
     setupEventListeners() {
-        // Name modal listeners
-        document.getElementById('start-new-game').addEventListener('click', () => {
+        // Step 1: Game mode selection
+        document.getElementById('select-new-game').addEventListener('click', () => {
             this.sounds.click.play();
-            this.selectGameMode('create');
+            this.showNameStep('create');
         });
 
-        document.getElementById('start-join-game').addEventListener('click', () => {
+        document.getElementById('select-join-game').addEventListener('click', () => {
             this.sounds.click.play();
-            this.selectGameMode('join');
+            this.showNameStep('join');
         });
 
-        document.getElementById('final-action').addEventListener('click', () => {
-            this.executeAction();
+        // Step 2: Name input
+        document.getElementById('proceed-with-name').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.handleNameSubmission();
+        });
+
+        document.getElementById('back-to-mode').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.showGameModeStep();
+        });
+
+        // Step 3: Room code (join only)
+        document.getElementById('connect-to-game').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.handleRoomCodeSubmission();
+        });
+
+        document.getElementById('back-to-name').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.showNameStep(this.pendingAction);
         });
 
         document.getElementById('player-name').addEventListener('input', () => {
-            this.validateModalInputs();
+            this.validateNameInput();
         });
 
         document.getElementById('player-name').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && this.pendingAction) {
-                this.executeAction();
+            if (e.key === 'Enter') {
+                const button = document.getElementById('proceed-with-name');
+                if (!button.disabled) {
+                    this.handleNameSubmission();
+                }
             }
         });
 
-        document.getElementById('room-id-input').addEventListener('input', () => {
-            this.validateModalInputs();
+        document.getElementById('room-code-input').addEventListener('input', () => {
+            this.validateRoomCodeInput();
         });
 
-        document.getElementById('room-id-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && this.pendingAction === 'join') {
-                this.executeAction();
+        document.getElementById('room-code-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const button = document.getElementById('connect-to-game');
+                if (!button.disabled) {
+                    this.handleRoomCodeSubmission();
+                }
             }
         });
 
-        // New simplified game button listeners
+        // Main game button listeners (outside modal)
         document.getElementById('new-game-btn').addEventListener('click', () => {
-            this.pendingAction = 'create';
+            this.sounds.click.play();
             this.showNameModal();
+            setTimeout(() => {
+                this.showNameStep('create');
+            }, 100);
         });
 
         document.getElementById('join-game-btn').addEventListener('click', () => {
-            this.pendingAction = 'join';
+            this.sounds.click.play();
             this.showNameModal();
             setTimeout(() => {
-                document.getElementById('join-room-input').classList.remove('hidden');
+                this.showNameStep('join');
             }, 100);
         });
 
@@ -487,81 +514,69 @@ class Connect4Game {
     }
 
     resetModal() {
-        // Clear form
+        // Clear all form inputs
         document.getElementById('player-name').value = '';
-        document.getElementById('room-id-input').value = '';
+        document.getElementById('room-code-input').value = '';
         
-        // Reset UI state
-        document.getElementById('room-input-group').classList.add('hidden');
-        document.getElementById('final-action').classList.add('hidden');
-        document.getElementById('final-action').disabled = true;
-        
-        // Show action buttons
-        document.getElementById('start-new-game').style.display = 'inline-flex';
-        document.getElementById('start-join-game').style.display = 'inline-flex';
-        
-        // Reset title
-        document.getElementById('modal-title').textContent = '🎮 Welcome to Connect 4!';
-        document.getElementById('modal-subtitle').textContent = 'Enter your name to get started';
+        // Reset to step 1
+        this.showGameModeStep();
         
         this.pendingAction = null;
     }
 
-    selectGameMode(mode) {
+    showGameModeStep() {
+        // Hide all steps
+        document.getElementById('game-mode-selection').classList.remove('hidden');
+        document.getElementById('name-input-step').classList.add('hidden');
+        document.getElementById('room-code-step').classList.add('hidden');
+        
+        // Reset title and subtitle
+        document.getElementById('modal-title').innerHTML = '🎮 Welcome to Connect 4!';
+        document.getElementById('modal-subtitle').textContent = 'Choose how you want to play';
+    }
+
+    showNameStep(mode) {
         this.pendingAction = mode;
         
-        // Hide action buttons
-        document.getElementById('start-new-game').style.display = 'none';
-        document.getElementById('start-join-game').style.display = 'none';
+        // Hide other steps, show name step
+        document.getElementById('game-mode-selection').classList.add('hidden');
+        document.getElementById('name-input-step').classList.remove('hidden');
+        document.getElementById('room-code-step').classList.add('hidden');
         
-        // Update title and subtitle
+        // Update title and button text based on mode
         if (mode === 'create') {
             document.getElementById('modal-title').innerHTML = '🎆 Create New Game';
-            document.getElementById('modal-subtitle').textContent = 'Start a new game and share the room code with friends!';
-            document.getElementById('final-action-text').textContent = 'Create Game';
+            document.getElementById('modal-subtitle').textContent = 'Enter your name to start a new game';
+            document.getElementById('proceed-text').textContent = 'Begin Game';
+            document.getElementById('proceed-icon').textContent = '🎆';
         } else {
             document.getElementById('modal-title').innerHTML = '🚀 Join Game';
-            document.getElementById('modal-subtitle').textContent = 'Enter the room code to join an existing game!';
-            document.getElementById('room-input-group').classList.remove('hidden');
-            document.getElementById('final-action-text').textContent = 'Join Game';
+            document.getElementById('modal-subtitle').textContent = 'Enter your name to join a game';
+            document.getElementById('proceed-text').textContent = 'Continue';
+            document.getElementById('proceed-icon').textContent = '🚀';
         }
         
-        // Show final action button
-        document.getElementById('final-action').classList.remove('hidden');
-        this.validateModalInputs();
+        // Focus on name input and validate
+        document.getElementById('player-name').focus();
+        this.validateNameInput();
     }
 
-    validateModalInputs() {
-        const playerNameInput = document.getElementById('player-name');
-        const roomIdInput = document.getElementById('room-id-input');
-        const playerName = playerNameInput.value.trim();
-        const roomId = roomIdInput.value.trim();
-        const finalButton = document.getElementById('final-action');
+    showRoomCodeStep() {
+        // Hide other steps, show room code step
+        document.getElementById('game-mode-selection').classList.add('hidden');
+        document.getElementById('name-input-step').classList.add('hidden');
+        document.getElementById('room-code-step').classList.remove('hidden');
         
-        // Validate player name
-        let nameValid = playerName.length >= 2;
-        playerNameInput.classList.remove('error', 'success');
-        if (playerName.length > 0) {
-            playerNameInput.classList.add(nameValid ? 'success' : 'error');
-        }
+        // Update title
+        document.getElementById('modal-title').innerHTML = '🔑 Enter Room Code';
+        document.getElementById('modal-subtitle').textContent = 'Ask your friend for the room code';
         
-        let isValid = nameValid;
-        
-        // Validate room ID if joining
-        if (this.pendingAction === 'join') {
-            let roomValid = roomId.length === 6;
-            roomIdInput.classList.remove('error', 'success');
-            if (roomId.length > 0) {
-                roomIdInput.classList.add(roomValid ? 'success' : 'error');
-            }
-            isValid = isValid && roomValid;
-        }
-        
-        finalButton.disabled = !isValid;
-        finalButton.style.opacity = isValid ? '1' : '0.6';
+        // Focus on room code input and validate
+        document.getElementById('room-code-input').focus();
+        this.validateRoomCodeInput();
     }
 
-    executeAction() {
+    handleNameSubmission() {
         const playerName = document.getElementById('player-name').value.trim();
         
         if (!this.socket) {
@@ -570,12 +585,59 @@ class Connect4Game {
         }
 
         if (this.pendingAction === 'create') {
+            // Create game immediately
             this.socket.emit('createGame', { playerName });
-        } else if (this.pendingAction === 'join') {
-            const roomId = document.getElementById('room-id-input').value.trim().toUpperCase();
-            this.socket.emit('joinGame', { gameId: roomId, playerName });
+        } else {
+            // Show room code step for joining
+            this.showRoomCodeStep();
         }
     }
+
+    handleRoomCodeSubmission() {
+        const playerName = document.getElementById('player-name').value.trim();
+        const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+        
+        if (!this.socket) {
+            this.showError('Not connected to server');
+            return;
+        }
+
+        this.socket.emit('joinGame', { gameId: roomCode, playerName });
+    }
+
+    validateNameInput() {
+        const playerNameInput = document.getElementById('player-name');
+        const playerName = playerNameInput.value.trim();
+        const proceedButton = document.getElementById('proceed-with-name');
+        
+        // Validate player name
+        let nameValid = playerName.length >= 2;
+        playerNameInput.classList.remove('error', 'success');
+        if (playerName.length > 0) {
+            playerNameInput.classList.add(nameValid ? 'success' : 'error');
+        }
+        
+        proceedButton.disabled = !nameValid;
+        proceedButton.style.opacity = nameValid ? '1' : '0.6';
+    }
+
+    validateRoomCodeInput() {
+        const roomCodeInput = document.getElementById('room-code-input');
+        const roomCode = roomCodeInput.value.trim();
+        const connectButton = document.getElementById('connect-to-game');
+        
+        // Validate room code
+        let codeValid = roomCode.length === 6;
+        roomCodeInput.classList.remove('error', 'success');
+        if (roomCode.length > 0) {
+            roomCodeInput.classList.add(codeValid ? 'success' : 'error');
+        }
+        
+        connectButton.disabled = !codeValid;
+        connectButton.style.opacity = codeValid ? '1' : '0.6';
+    }
+
+    // Removed executeAction - replaced with handleNameSubmission and handleRoomCodeSubmission
 
     showError(message) {
         const subtitle = document.getElementById('modal-subtitle');
