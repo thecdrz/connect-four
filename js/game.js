@@ -697,6 +697,9 @@ class Connect4Game {
             return;
         }
 
+    // Persist name for future sessions / invite auto-fill
+    try { if (playerName) localStorage.setItem('c4_name', playerName); } catch (e) {}
+
         if (this.pendingAction === 'create') {
             // Create game immediately
             this.socket.emit('createGame', { playerName });
@@ -714,6 +717,8 @@ class Connect4Game {
             this.showError('Not connected to server');
             return;
         }
+
+    try { if (playerName) localStorage.setItem('c4_name', playerName); } catch (e) {}
 
         this.socket.emit('joinGame', { gameId: roomCode, playerName });
     }
