@@ -391,6 +391,13 @@ main {
     font-size: 1.2em;
 }
 
+/* Game over modal action buttons */
+.gameover-actions { display: flex; gap: 14px; justify-content: center; margin-top: 5px; }
+.gameover-actions .btn { flex: 1 1 140px; max-width: 180px; padding: 14px 10px; font-size: 0.95em; }
+.gameover-actions #rematch-btn { background: linear-gradient(135deg,#4facfe 0%, #00f2fe 100%); color:#fff; }
+.gameover-actions #rematch-btn:hover { transform: translateY(-2px); box-shadow:0 8px 25px rgba(79,172,254,0.35); }
+.gameover-actions #rematch-btn:disabled { opacity:.65; cursor:not-allowed; transform:none; box-shadow:none; }
+
 /* Jukebox Styles removed */
 
 /* Responsive design */
