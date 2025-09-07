@@ -610,8 +610,8 @@ class Connect4Game {
         const playerName = playerNameInput.value.trim();
         const proceedButton = document.getElementById('proceed-with-name');
         
-        // Validate player name
-        let nameValid = playerName.length >= 2;
+        // Validate player name (2-15 characters)
+        let nameValid = playerName.length >= 2 && playerName.length <= 15;
         playerNameInput.classList.remove('error', 'success');
         if (playerName.length > 0) {
             playerNameInput.classList.add(nameValid ? 'success' : 'error');

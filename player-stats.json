@@ -5,8 +5,13 @@
     "games": 2
   },
   "Dad": {
-    "wins": 1,
+    "wins": 2,
     "losses": 1,
-    "games": 2
+    "games": 3
+  },
+  "dasassas": {
+    "wins": 0,
+    "losses": 1,
+    "games": 1
   }
 }

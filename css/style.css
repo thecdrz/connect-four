@@ -60,7 +60,7 @@ main {
     border-radius: 20px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    max-width: 600px;
+    max-width: 700px;
 }
 
 .players-info {
@@ -108,8 +108,8 @@ main {
 }
 
 .cell {
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     background: white;
     border-radius: 50%;
     cursor: pointer;
@@ -215,8 +215,8 @@ main {
     border-radius: 20px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    max-width: 420px;
-    min-width: 380px;
+    max-width: 480px;
+    min-width: 420px;
     height: fit-content;
 }
 
@@ -371,7 +371,7 @@ main {
 }
 
 .chat-messages {
-    height: 220px;
+    height: 260px;
     border: 2px solid #ecf0f1;
     border-radius: 10px;
     padding: 15px;
@@ -599,9 +599,16 @@ main {
     background: #ecf0f1;
 }
 
+/* Ensure proper step visibility */
 #name-input-step,
 #room-code-step {
     animation: slideUp 0.3s ease-out;
+}
+
+#name-input-step.hidden,
+#room-code-step.hidden,
+#game-mode-selection.hidden {
+    display: none !important;
 }
 
 .input-group small {
@@ -610,6 +617,41 @@ main {
     color: #7f8c8d;
     font-size: 0.85em;
     font-style: italic;
+}
+
+/* Enhanced Leaderboard */
+.leaderboard-table {
+    margin: 20px 0;
+    width: 100%;
+    min-width: 500px;
+}
+
+.leaderboard-header {
+    display: grid;
+    grid-template-columns: 80px 200px 80px 100px;
+    gap: 15px;
+    padding: 15px;
+    background: #2c3e50;
+    color: white;
+    font-weight: bold;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+}
+
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 80px 200px 80px 100px;
+    gap: 15px;
+    padding: 12px 15px;
+    border-bottom: 1px solid #ecf0f1;
+    transition: background-color 0.3s ease;
+}
+
+#leaderboard-modal .modal-content {
+    max-width: 600px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 /* Animations */
@@ -658,18 +700,18 @@ main {
     75% { transform: translateX(5px); }
 }
 
-/* Cell drop animation */
+/* Cell drop animation - reduced bounce */
 @keyframes dropPiece {
     0% {
-        transform: translateY(-400px) scale(0.8);
-        opacity: 0.7;
+        transform: translateY(-400px) scale(0.9);
+        opacity: 0.8;
     }
-    60% {
-        transform: translateY(10px) scale(1.1);
+    70% {
+        transform: translateY(3px) scale(1.02);
         opacity: 1;
     }
-    80% {
-        transform: translateY(-5px) scale(0.95);
+    85% {
+        transform: translateY(-1px) scale(0.98);
     }
     100% {
         transform: translateY(0) scale(1);
@@ -678,7 +720,7 @@ main {
 }
 
 .cell.dropping {
-    animation: dropPiece 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: dropPiece 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* Enhanced button animations */

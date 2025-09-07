@@ -325,6 +325,11 @@ io.on('connection', (socket) => {
             return;
         }
         
+        if (playerName.trim().length > 15) {
+            socket.emit('error', { message: 'Player name must be 15 characters or less' });
+            return;
+        }
+        
         const gameId = generateGameId();
         const game = new Connect4Game(gameId);
         games.set(gameId, game);
@@ -342,6 +347,11 @@ io.on('connection', (socket) => {
     socket.on('joinGame', ({ gameId, playerName }) => {
         if (!playerName || playerName.trim().length < 2) {
             socket.emit('error', { message: 'Player name must be at least 2 characters' });
+            return;
+        }
+        
+        if (playerName.trim().length > 15) {
+            socket.emit('error', { message: 'Player name must be 15 characters or less' });
             return;
         }
         
