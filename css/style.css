@@ -17,13 +17,13 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 6px 20px 18px; /* further reduced top padding */
+    padding: 2px 20px 16px; /* minimal top padding to pull content upward */
 }
 
 .logo-section {
     text-align: center;
-    margin-top: 0; /* keep minimal top */
-    margin-bottom: 4px; /* small readable gap below larger logo */
+    margin-top: 0;
+    margin-bottom: 0; /* remove extra gap under logo */
 }
 
 .game-logo {
@@ -43,7 +43,7 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 24px; /* add breathing space between status and board */
+    margin-bottom: 6px; /* tighter space before game board */
 }
 
 h1 {
