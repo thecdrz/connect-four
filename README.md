@@ -15,6 +15,7 @@ A real-time, browser-based multiplayer Connect 4 game built with Node.js and Soc
 - 🔄 **Rematch Flow:** Post-game rematch button with vote sync (starts when both players agree).
 - � **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
 - 🗂️ **Name Persistence:** Recently used player name auto-fills when opening an invite link.
+    - Note: The invite link includes both `room` and a `host` param. The `host` value is displayed contextually ("Joining <host>'s game") but does not overwrite Player 2's own chosen name.
 - 🎨 **Modern & Responsive UI:** Board + chat stay side-by-side on desktop; adaptive stacking for tablets & mobile.
 - ✨ **Polished Feedback:** Animated piece drops, winning pulse, hover micro‑interactions, active avatar glow.
 - 🔊 **Sound Effects:** Lightweight generated audio cues (drop, win, connect, chat) with toggle.
@@ -116,16 +117,21 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - CPU mode (single player) integrated alongside online mode selection.
 - Deep status panel enhancements (visibility, consistent sizing) and inline invite actions.
 - Improved Game Over modal with unified button layout and consistent sizing.
+- Dynamic chat height management script to ensure chat never extends below board on desktop.
 
 #### Changed
 - Enlarged avatars (~+20%) and adjusted spacing; removed legacy color suffixes from names.
 - Modal actions styled for clarity; rematch button uses gradient accent.
 - Column headers centered & slimmed; tightened vertical whitespace for reduced scroll.
+- Chat container uses responsive JS + CSS hybrid sizing (no layout push + smooth resize on window changes or content growth).
+- Back button behavior in Join flow: after any failed room code attempt, Back now closes the modal instead of returning to the name step (faster recovery path).
 
 #### Fixed
 - CSS media query / brace mismatch that previously broke mobile styles.
 - Layout wrapping issues—chat reliably remains to the right until breakpoint.
 - Rapid successive room creation/join edge cases causing inconsistent button states.
+- Initial multiplayer load where chat window could extend a few pixels below board before second player joined (now corrected immediately via `adjustChatHeight`).
+- Join modal sometimes reopening on Back after invalid room codes; now closes cleanly once an error/attempt occurs.
 
 #### Removed
 - Legacy jukebox/audio UI panel (replaced by simple audio toggle).

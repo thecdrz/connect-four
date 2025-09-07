@@ -11,6 +11,29 @@ body {
     color: #333;
 }
 
+/* Theme Tokens */
+:root {
+  --brand-start: #5468ef;
+  --brand-end: #7a4fd6;
+  --brand-hover-start: #485be3;
+  --brand-hover-end: #6b43c4;
+  --text-strong: #1d2d46;
+  --text-medium: #2c3e50;
+  --text-invert: #ffffff;
+  --surface-base: #ffffff;
+  --surface-subtle: #f5f8fc;
+  --surface-hover: #eef3ff;
+  --border-soft: #d2dce9;
+  --border: #c0ccdd;
+  --border-strong: #a2b4cd;
+  --focus-ring: rgba(102,126,234,.55);
+  --danger: #e74c3c;
+  --danger-hover: #c0392b;
+        --action-height: 42px; /* unified height */
+                    --utility-height: 42px; /* unified height */
+    --chat-height-desktop: 400px; /* initial max; JS may adjust downward */
+}
+
 /* Utility */
 .hidden { display: none !important; }
 
@@ -99,7 +122,7 @@ main {
     gap: 24px; /* tightened gap between board and chat */
     justify-content: center;
     flex-wrap: nowrap; /* keep chat to the right of board on desktop */
-    align-items: stretch; /* stretch sidebar to same height as game-area */
+    align-items: flex-start; /* allow independent heights to avoid large white space */
 }
 
 .game-area {
@@ -232,13 +255,60 @@ main {
 
 .controls {
     display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-    min-height: 50px; /* Reduced to make buttons more consistent */
-    align-items: center; /* Center buttons vertically */
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
 }
 
+/* Button hierarchy */
+.main-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.main-actions .btn { flex: 1 1 160px; height: var(--action-height); padding: 8px 18px; display:flex; align-items:center; justify-content:center; }
+
+.btn.primary-action {
+    background: linear-gradient(135deg,var(--brand-start) 0%,var(--brand-end) 100%);
+    color: var(--text-invert);
+    font-weight: 700;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 4px 14px rgba(84,104,239,0.35);
+}
+.btn.primary-action:hover { background: linear-gradient(135deg,var(--brand-hover-start) 0%,var(--brand-hover-end) 100%); }
+.btn.primary-action:active { box-shadow: 0 2px 8px rgba(72,91,210,0.5); }
+.btn.primary-action:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+.btn.secondary-action {
+    background: var(--surface-subtle);
+    color: var(--text-strong);
+    border: 1px solid var(--border);
+    font-weight: 600;
+}
+.btn.secondary-action:hover { background: var(--surface-hover); border-color: var(--border-strong); } 
+.btn.secondary-action:active { background: #e3ebf7; }
+.btn.secondary-action:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+.btn.ghost { 
+    background: var(--surface-base); 
+    color: var(--text-medium); 
+    border: 1px solid var(--border-soft); 
+    font-weight: 500; 
+}
+.btn.ghost:hover { 
+    background: #f3f6fa; 
+    border-color: var(--border); 
+} 
+.btn.ghost:active { 
+    background: #e9eef3; 
+}
+.btn.ghost:focus-visible { 
+    outline: 3px solid var(--focus-ring); 
+    outline-offset: 2px; 
+}
+
+.btn.danger:hover { background: var(--danger-hover); }
+
+.btn.primary-action:hover, .btn.secondary-action:hover, .btn.ghost:hover, .btn.danger:hover { color: inherit; }
+.btn:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+/* General button styles */
 .btn {
     background: #3498db;
     color: white;
@@ -310,6 +380,7 @@ main {
     min-width: 360px; /* keep proportion while allowing wrap */
     display: flex;
     flex-direction: column;
+    height: auto; /* allow natural height */
 }
 
 .chat-container, .game-info {
@@ -378,6 +449,22 @@ main {
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
+/* Unified modal structural classes */
+.modal-base { padding:32px 32px 26px; display:flex; flex-direction:column; gap:24px; text-align:left; max-width:520px; }
+.modal-header h2 { font-size:1.8em; margin:0; text-align:center; }
+.modal-body p { margin:0; line-height:1.45; font-size:1.05em; color:var(--text-medium); text-align:center; }
+.modal-footer { display:flex; justify-content:flex-end; gap:12px; }
+.modal-footer .btn { min-width:130px; }
+.modal-footer[data-footer="leaderboard"] { justify-content:center; }
+.modal-footer .btn.ghost { background:var(--surface-subtle); border:1px solid var(--border-soft); }
+.modal-footer .btn.ghost:hover { background:var(--surface-hover); }
+
+@media (max-width:600px){
+    .modal-base { padding:26px 22px 22px; gap:20px; }
+    .modal-footer { flex-direction:column-reverse; }
+    .modal-footer .btn { width:100%; min-width:0; }
+}
+
 .modal-content h2 {
     color: #2c3e50;
     margin-bottom: 20px;
@@ -391,11 +478,6 @@ main {
 }
 
 /* Game over modal action buttons */
-.gameover-actions { display: flex; gap: 14px; justify-content: center; margin-top: 5px; }
-.gameover-actions .btn { flex: 1 1 140px; max-width: 180px; padding: 14px 10px; font-size: 0.95em; }
-.gameover-actions #rematch-btn { background: linear-gradient(135deg,#4facfe 0%, #00f2fe 100%); color:#fff; }
-.gameover-actions #rematch-btn:hover { transform: translateY(-2px); box-shadow:0 8px 25px rgba(79,172,254,0.35); }
-.gameover-actions #rematch-btn:disabled { opacity:.65; cursor:not-allowed; transform:none; box-shadow:none; }
 
 /* Jukebox Styles removed */
 
@@ -469,6 +551,7 @@ main {
 @media (max-width: 1050px) {
     main { flex-wrap: wrap; }
     .sidebar { max-width: 100%; min-width: auto; }
+    :root { --chat-height-desktop: 320px; }
 }
 
 /* Desktop layout: slightly adjusted ratio (was 2:1) to give chat more width */
@@ -476,7 +559,7 @@ main {
     main {
         display: grid;
     grid-template-columns: 1.95fr 1.05fr; /* board still dominant */
-        align-items: stretch;
+    align-items: start; /* prevent forced equal height creating blank space */
     }
     .game-area, .sidebar { width: 100%; }
 }
@@ -484,10 +567,10 @@ main {
 /* Chat Styles */
 .chat-container {
     margin-bottom: 12px;
-    flex: 1 1 auto; /* allow chat to grow and fill vertical space */
     display: flex;
     flex-direction: column;
-    min-height: 0; /* enables flex children to shrink properly */
+    flex: 0 0 auto; /* do not stretch to match board */
+    min-height: 0;
 }
 
 .chat-container h3 {
@@ -500,14 +583,17 @@ main {
 .chat-messages {
     flex: 1 1 auto; /* dynamic height to align chat bottom with board */
     min-height: 250px; /* baseline height */
+    max-height: 420px; /* prevent layout push; scroll within */
     border: 2px solid #ecf0f1;
     border-radius: 10px;
     padding: 15px;
     overflow-y: auto;
     background: #fafafa;
-    margin-bottom: 10px; /* Reduced from 15px to tighten layout */
+    margin-bottom: 8px;
     width: 100%;
 }
+
+.chat-messages-window { flex:0 0 auto; display:flex; height: var(--chat-height-desktop); max-height: var(--chat-height-desktop); transition: height .18s ease, max-height .18s ease; }
 
 .chat-message {
     margin-bottom: 15px;
@@ -516,10 +602,11 @@ main {
     max-width: 80%;
 }
 
-.chat-message.own {
-    background: #e3f2fd;
-    margin-left: auto;
-    border-bottom-right-radius: 3px;
+.chat-messages {
+    flex: 0 0 auto; /* do not allow growth to push layout */
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
 }
 
 .chat-message.other {
@@ -1007,3 +1094,8 @@ main {
     max-height: 90vh;
     overflow-y: auto;
 }
+
+.utility-toolbar { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+.toolbar-btn { padding:6px 14px; font-size:0.83em; min-width:86px; display:flex; align-items:center; justify-content:center; gap:6px; height: var(--utility-height); border-radius:8px; line-height:1.1; }
+.toolbar-btn .label { font-weight:600; letter-spacing:.25px; }
+@media (max-width:768px){ .toolbar-btn { flex:1 1 80px; } }

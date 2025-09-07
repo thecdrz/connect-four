@@ -1,6 +1,6 @@
 {
   "name": "connect4-game",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A multiplayer Connect 4 game that can be played in the browser over the internet",
   "main": "server.js",
   "scripts": {

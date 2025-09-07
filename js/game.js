@@ -17,6 +17,9 @@ class Connect4Game {
     this.inviteBaseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/i,'');
     this.typingTimeout = null;
     this.iAmTyping = false;
+    // Join flow tracking
+    this.joinAttempted = 0;
+    this.joinErrorEncountered = false;
         
         this.initializeAudio();
         
@@ -24,6 +27,11 @@ class Connect4Game {
         this.initializeSocket();
         this.setupEventListeners();
     this.processInviteParams();
+
+    // Ensure chat window never extends below board on desktop
+    window.addEventListener('resize', () => this.adjustChatHeight());
+    // Defer initial calculation until layout settles
+    setTimeout(()=> this.adjustChatHeight(), 10);
     }
 
     initializeGame() {
@@ -103,6 +111,8 @@ class Connect4Game {
             this.enableChatInput();
             this.updateControlButtons();
             this.showInviteActions();
+            // Recalculate chat height now that invite actions expanded status panel
+            setTimeout(()=>this.adjustChatHeight(), 30);
         });
 
         this.socket.on('gameJoined', (data) => {
@@ -116,6 +126,7 @@ class Connect4Game {
             this.enableChatInput();
             this.updateControlButtons();
             this.showInviteActions();
+            setTimeout(()=>this.adjustChatHeight(), 30);
         });
 
         this.socket.on('gameStart', (data) => {
@@ -128,6 +139,8 @@ class Connect4Game {
             this.updatePlayerIndicators();
             this.updateStatus(this.isMyTurn ? 'Your turn!' : "Opponent's turn");
             this.updateControlButtons();
+            // Board or status changes may alter heights
+            setTimeout(()=>this.adjustChatHeight(), 30);
         });
 
         this.socket.on('moveMade', (data) => {
@@ -207,6 +220,10 @@ class Connect4Game {
 
         this.socket.on('error', (error) => {
             this.updateStatus(`Error: ${error.message}`);
+            const roomStep = document.getElementById('room-code-step');
+            if (roomStep && !roomStep.classList.contains('hidden') && this.pendingAction === 'join') {
+                this.joinErrorEncountered = true;
+            }
         });
     }
 
@@ -241,7 +258,11 @@ class Connect4Game {
 
         document.getElementById('back-to-name').addEventListener('click', () => {
             this.sounds.click.play();
-            this.showNameStep(this.pendingAction);
+            if (this.joinErrorEncountered || this.joinAttempted > 0) {
+                this.hideNameModal();
+            } else {
+                this.showNameStep(this.pendingAction);
+            }
         });
 
         document.getElementById('player-name').addEventListener('input', () => {
@@ -628,12 +649,16 @@ class Connect4Game {
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-message').textContent = message;
         document.getElementById('modal').classList.remove('hidden');
-        // Reveal rematch button only for online games
-        const btn = document.getElementById('rematch-btn');
-        if (btn && this.gameMode === 'online') {
-            btn.classList.remove('hidden');
-            btn.disabled = false;
-            btn.textContent = '🔄 Rematch';
+        // Reveal rematch button only for online games (primary positioned right via DOM order)
+        const rematchBtn = document.getElementById('rematch-btn');
+        if (rematchBtn) {
+            if (this.gameMode === 'online') {
+                rematchBtn.classList.remove('hidden');
+                rematchBtn.disabled = false;
+                rematchBtn.textContent = '🔄 Rematch';
+            } else {
+                rematchBtn.classList.add('hidden');
+            }
         }
     }
 
@@ -668,6 +693,8 @@ class Connect4Game {
         document.getElementById('room-code-step').classList.add('hidden');
         
         this.pendingAction = null;
+    this.joinAttempted = 0;
+    this.joinErrorEncountered = false;
     }
 
     showGameModeStep() {
@@ -753,7 +780,8 @@ class Connect4Game {
 
     try { if (playerName) localStorage.setItem('c4_name', playerName); } catch (e) {}
 
-        this.socket.emit('joinGame', { gameId: roomCode, playerName });
+    this.joinAttempted++;
+    this.socket.emit('joinGame', { gameId: roomCode, playerName });
     }
 
     validateNameInput() {
@@ -870,6 +898,8 @@ class Connect4Game {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     // Clear typing indicator when message received from opponent
     if (data.playerNumber !== this.myPlayerNumber) this.clearTypingIndicator();
+    // Recalculate chat height in case new content causes sidebar overflow relative to board
+    this.adjustChatHeight();
     }
 
     escapeHtml(text) {
@@ -931,27 +961,28 @@ class Connect4Game {
         const leaveBtn = document.getElementById('leave-game-btn');
 
         if (this.gameMode === 'cpu') {
-            // In CPU mode: show a styled "New Game" and "Back to Menu" instead of "Leave Game"
+            // CPU mode: offer New CPU Game (primary), Back to Menu (secondary)
             cpuBtn.classList.add('hidden');
             newBtn.classList.remove('hidden');
             newBtn.textContent = '🔄 New CPU Game';
-            newBtn.className = 'btn secondary'; // Different style for "new game" in CPU mode
+            newBtn.className = 'btn primary-action';
             joinBtn.classList.remove('hidden');
             joinBtn.textContent = '⬅️ Back to Menu';
-            joinBtn.className = 'btn'; // Standard style for back
+            joinBtn.className = 'btn secondary-action';
             leaveBtn.classList.add('hidden');
-        } else if (!this.inRoom) { 
-            // Lobby state: restore original labels and styling
+        } else if (!this.inRoom) {
+            // Lobby: primary = New Online Game, secondaries = Join & CPU
             cpuBtn.classList.remove('hidden');
+            cpuBtn.className = 'btn secondary-action';
             newBtn.classList.remove('hidden');
             newBtn.textContent = '🎯 New Online Game';
-            newBtn.className = 'btn';
-            joinBtn.classList.remove('hidden'); 
+            newBtn.className = 'btn primary-action';
+            joinBtn.classList.remove('hidden');
             joinBtn.textContent = '🚪 Join Online Game';
-            joinBtn.className = 'btn';
+            joinBtn.className = 'btn secondary-action';
             leaveBtn.classList.add('hidden');
-        } else { 
-            // In online game: show leave button
+        } else {
+            // In online game: hide mode selection, show leave in toolbar
             cpuBtn.classList.add('hidden');
             newBtn.classList.add('hidden');
             joinBtn.classList.add('hidden');
@@ -1049,6 +1080,8 @@ class Connect4Game {
                 fb.className = 'invite-feedback';
             }
         }
+    // Any expansion here can push sidebar below board; correct it
+    setTimeout(()=>this.adjustChatHeight(), 20);
     }
 
     hideInviteActions() {
@@ -1056,6 +1089,7 @@ class Connect4Game {
         if (el) el.classList.add('hidden');
         const fb = document.getElementById('invite-feedback');
         if (fb) fb.textContent = '';
+    setTimeout(()=>this.adjustChatHeight(), 20);
     }
 
     showInviteFeedback(msg, success) {
@@ -1153,9 +1187,57 @@ class Connect4Game {
             }
         }, 1000);
     }
+
+    /* Layout helper: keep chat bottom from extending below board bottom on desktop */
+    adjustChatHeight() {
+        const desktop = window.innerWidth >= 1051;
+        const chatWindow = document.querySelector('.chat-messages-window');
+        if (!chatWindow) return;
+
+        // On mobile / narrow layouts let CSS handle stacking and natural height
+        if (!desktop) {
+            chatWindow.style.height = '';
+            chatWindow.style.maxHeight = '';
+            return;
+        }
+
+        const gameArea = document.querySelector('.game-area');
+        const sidebar = document.querySelector('.sidebar');
+        if (!gameArea || !sidebar) return;
+
+        const boardHeight = gameArea.offsetHeight; // total left column height
+
+        // Measure sidebar total height with current chat sizing
+        const sidebarRectHeight = sidebar.offsetHeight;
+
+        // If sidebar already fits within board height, clamp to configured max (CSS var) and exit
+        if (sidebarRectHeight <= boardHeight) {
+            // Respect existing max (from CSS var) but ensure we don't exceed remaining space
+            // Determine available space for chat: boardHeight - (sidebarHeight - chatWindowHeight)
+            const chatCurrent = chatWindow.offsetHeight;
+            const nonChatSpace = sidebarRectHeight - chatCurrent;
+            const available = boardHeight - nonChatSpace - 4; // small buffer
+            const target = Math.min(chatCurrent, available);
+            chatWindow.style.maxHeight = target + 'px';
+            chatWindow.style.height = target + 'px';
+            return;
+        }
+
+        // Sidebar is taller than board. Reduce chat window height by the overflow amount.
+        const overflow = sidebarRectHeight - boardHeight;
+        const newHeight = Math.max(160, chatWindow.offsetHeight - overflow - 6); // keep a sensible minimum
+        chatWindow.style.height = newHeight + 'px';
+        chatWindow.style.maxHeight = newHeight + 'px';
+    }
 }
 
 // Initialize the game when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new Connect4Game();
+    window.__c4instance = new Connect4Game();
+    // After images (player avatars/logo) load, recalc chat height since board container height may change
+    window.addEventListener('load', () => {
+        if (window.__c4instance && typeof window.__c4instance.adjustChatHeight === 'function') {
+            window.__c4instance.adjustChatHeight();
+        }
+    });
 });
