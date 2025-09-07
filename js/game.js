@@ -14,12 +14,14 @@ class Connect4Game {
         this.pendingAction = null; // 'create' or 'join'
         this.audioEnabled = true;
         this.sounds = {};
+    this.inviteBaseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/i,'');
         
         this.initializeAudio();
         
         this.initializeGame();
         this.initializeSocket();
         this.setupEventListeners();
+    this.processInviteParams();
     }
 
     initializeGame() {
@@ -98,6 +100,7 @@ class Connect4Game {
             this.hideNameModal();
             this.enableChatInput();
             this.updateControlButtons();
+            this.showInviteActions();
         });
 
         this.socket.on('gameJoined', (data) => {
@@ -110,6 +113,7 @@ class Connect4Game {
             this.hideNameModal();
             this.enableChatInput();
             this.updateControlButtons();
+            this.showInviteActions();
         });
 
         this.socket.on('gameStart', (data) => {
@@ -324,6 +328,36 @@ class Connect4Game {
             this.sounds.click.play();
             this.hideLeaveConfirmation();
         });
+
+        // Invite feature buttons
+        const copyLinkBtn = document.getElementById('copy-invite-link');
+        const copyCodeBtn = document.getElementById('copy-room-code');
+        const shareBtn = document.getElementById('share-invite');
+        if (copyLinkBtn) {
+            copyLinkBtn.addEventListener('click', () => {
+                if (!this.gameId) return;
+                const url = this.buildInviteUrl();
+                navigator.clipboard.writeText(url).then(() => this.showInviteFeedback('Link copied!', true)).catch(()=>this.showInviteFeedback('Copy failed', false));
+            });
+        }
+        if (copyCodeBtn) {
+            copyCodeBtn.addEventListener('click', () => {
+                if (!this.gameId) return;
+                navigator.clipboard.writeText(this.gameId).then(()=>this.showInviteFeedback('Code copied!', true)).catch(()=>this.showInviteFeedback('Copy failed', false));
+            });
+        }
+        if (shareBtn && navigator.share) {
+            shareBtn.classList.remove('hidden');
+            shareBtn.addEventListener('click', async () => {
+                if (!this.gameId) return;
+                try {
+                    await navigator.share({ title: 'Connect 4 Game', text: 'Join my Connect 4 game!', url: this.buildInviteUrl() });
+                    this.showInviteFeedback('Shared!', true);
+                } catch (e) {
+                    // user cancelled or failed
+                }
+            });
+        }
     }
 
     createBoard() {
@@ -929,6 +963,7 @@ class Connect4Game {
         this.updatePlayerIndicators();
         this.updateControlButtons();
         this.updateStatus(statusMessage || '🎮 Choose a game mode to start playing.');
+    this.hideInviteActions();
     }
 
     startCPUGame() {
@@ -948,6 +983,76 @@ class Connect4Game {
         this.updateControlButtons();
         this.disableChatInput(); // No chat in CPU mode
         document.getElementById('room-info').textContent = 'Single Player vs Easy CPU';
+        this.hideInviteActions();
+    }
+
+    /* Invite Feature Helpers */
+    buildInviteUrl() {
+        const params = new URLSearchParams();
+        if (this.gameId) params.set('room', this.gameId);
+        if (this.myPlayerName) params.set('host', this.myPlayerName);
+        return `${this.inviteBaseUrl}?${params.toString()}`;
+    }
+
+    showInviteActions() {
+        if (this.gameMode === 'cpu') return; // Not for CPU games
+        const el = document.getElementById('invite-actions');
+        if (!el) return;
+        el.classList.remove('hidden');
+        // Update feedback area with quick link preview if room present
+        if (this.gameId) {
+            const fb = document.getElementById('invite-feedback');
+            if (fb) {
+                fb.textContent = 'Share this link with a friend to join.';
+                fb.className = 'invite-feedback';
+            }
+        }
+    }
+
+    hideInviteActions() {
+        const el = document.getElementById('invite-actions');
+        if (el) el.classList.add('hidden');
+        const fb = document.getElementById('invite-feedback');
+        if (fb) fb.textContent = '';
+    }
+
+    showInviteFeedback(msg, success) {
+        const fb = document.getElementById('invite-feedback');
+        if (!fb) return;
+        fb.textContent = msg;
+        fb.className = 'invite-feedback ' + (success ? 'success' : 'error');
+        clearTimeout(this._inviteTimer);
+        this._inviteTimer = setTimeout(()=>{
+            if (fb.classList.contains('success')) fb.textContent = '';
+        }, 2500);
+    }
+
+    processInviteParams() {
+        const params = new URLSearchParams(window.location.search);
+        const room = params.get('room');
+        const host = params.get('host');
+        if (room) {
+            // Auto-open modal in join mode; prefill room code; focus name
+            this.showNameModal();
+            this.showNameStep('join');
+            // If host provided, adjust subtitle message
+            const codeInput = document.getElementById('room-code-input');
+            codeInput.value = room.toUpperCase();
+            this.validateRoomCodeInput();
+            // If player has localStorage name, set it
+            try {
+                const stored = localStorage.getItem('c4_name');
+                if (stored) {
+                    const nameInput = document.getElementById('player-name');
+                    nameInput.value = stored;
+                    this.validateNameInput();
+                }
+            } catch (e) {}
+            const subtitle = document.getElementById('modal-subtitle');
+            if (subtitle) {
+                subtitle.textContent = host ? `Joining ${host}'s game` : 'Enter your name to join';
+            }
+        }
     }
 
     cpuMove() {

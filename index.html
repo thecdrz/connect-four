@@ -98,6 +98,15 @@
                 <div class="game-status">
                     <div id="status">Welcome to Connect 4! Click "New Game" or "Join Game" to start.</div>
                     <div id="room-info"></div>
+                    <!-- Invite / Share Actions (shown after creating or joining an online game) -->
+                    <div id="invite-actions" class="invite-actions hidden">
+                        <div class="invite-row">
+                            <button id="copy-invite-link" class="btn small" title="Copy a full link your friend can open">🔗 Copy Link</button>
+                            <button id="copy-room-code" class="btn small" title="Copy just the room code">📋 Copy Code</button>
+                            <button id="share-invite" class="btn small hidden" title="Native share (mobile)">📤 Share</button>
+                        </div>
+                        <div id="invite-feedback" class="invite-feedback" aria-live="polite"></div>
+                    </div>
                 </div>
                 <!-- Chat Area -->
                 <div class="chat-container">

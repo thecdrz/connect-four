@@ -68,6 +68,14 @@ h1 {
     box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
+/* Invite feature */
+.invite-actions { margin-top: 10px; }
+.invite-actions .invite-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.invite-actions .btn.small { font-size: 0.75em; padding: 6px 10px; }
+.invite-feedback { margin-top: 6px; font-size: 0.75em; font-weight: 600; color: #2c3e50; min-height: 16px; }
+.invite-feedback.success { color: #27ae60; }
+.invite-feedback.error { color: #e74c3c; }
+
 #status {
     font-size: 1.2em;
     font-weight: bold;
