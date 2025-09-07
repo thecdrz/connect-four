@@ -11,7 +11,9 @@ class Connect4Game {
         this.socket = null;
         this.gameId = null;
         this.gameMode = null; // 'cpu' or 'online'
+        this.gameType = 'connect4'; // 'connect4' or 'chess'
         this.cpuDifficulty = 'easy'; // 'easy', 'medium', 'hard'
+        this.currentCpuCharacter = null; // Will store selected CPU character info
         this.pendingAction = null; // 'create' or 'join'
         this.audioEnabled = true;
         this.sounds = {};
@@ -44,9 +46,10 @@ class Connect4Game {
 
     initializeGame() {
         this.createBoard();
+        this.createChessBoard();
         this.updateStatus('Connecting to server...');
         this.disableChatInput();
-    this.updateControlButtons();
+        this.updateControlButtons();
     }
 
     initializeAudio() {
@@ -293,6 +296,17 @@ class Connect4Game {
     }
 
     setupEventListeners() {
+        // Game type selection
+        document.getElementById('connect4-game-type').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.switchGameType('connect4');
+        });
+
+        document.getElementById('chess-game-type').addEventListener('click', () => {
+            this.sounds.click.play();
+            this.switchGameType('chess');
+        });
+
         // Step 1: Game mode selection (now unused - kept for potential back navigation)
         document.getElementById('select-new-game').addEventListener('click', () => {
             this.sounds.click.play();
@@ -531,7 +545,7 @@ class Connect4Game {
     }
 
     createBoard() {
-        const boardElement = document.getElementById('game-board');
+        const boardElement = document.getElementById('connect4-board');
         boardElement.innerHTML = '';
     // Removed numeric column headers to reduce visual clutter
 
@@ -546,6 +560,101 @@ class Connect4Game {
                 boardElement.appendChild(cell);
             }
         }
+    }
+
+    createChessBoard() {
+        const boardElement = document.getElementById('chess-board');
+        boardElement.innerHTML = '';
+        
+        // Chess piece Unicode symbols
+        const pieces = {
+            'white': {
+                'king': '♔', 'queen': '♕', 'rook': '♖', 
+                'bishop': '♗', 'knight': '♘', 'pawn': '♙'
+            },
+            'black': {
+                'king': '♚', 'queen': '♛', 'rook': '♜', 
+                'bishop': '♝', 'knight': '♞', 'pawn': '♟'
+            }
+        };
+
+        // Initialize chess board position
+        const initialPosition = [
+            ['♜','♞','♝','♛','♚','♝','♞','♜'],
+            ['♟','♟','♟','♟','♟','♟','♟','♟'],
+            ['','','','','','','',''],
+            ['','','','','','','',''],
+            ['','','','','','','',''],
+            ['','','','','','','',''],
+            ['♙','♙','♙','♙','♙','♙','♙','♙'],
+            ['♖','♘','♗','♕','♔','♗','♘','♖']
+        ];
+
+        // Create chess squares
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const square = document.createElement('div');
+                square.className = `chess-square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                square.dataset.row = row;
+                square.dataset.col = col;
+                
+                if (initialPosition[row][col]) {
+                    const piece = document.createElement('span');
+                    piece.className = 'chess-piece';
+                    piece.textContent = initialPosition[row][col];
+                    square.appendChild(piece);
+                }
+                
+                square.addEventListener('click', () => this.handleChessMove(row, col));
+                boardElement.appendChild(square);
+            }
+        }
+    }
+
+    switchGameType(gameType) {
+        if (this.gameActive) {
+            // Don't allow switching during active games
+            return;
+        }
+
+        this.gameType = gameType;
+        
+        // Update button states
+        document.querySelectorAll('.game-type-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.getElementById(`${gameType}-game-type`).classList.add('active');
+        
+        // Show/hide appropriate boards
+        if (gameType === 'connect4') {
+            document.getElementById('connect4-board').classList.remove('hidden');
+            document.getElementById('chess-board').classList.add('hidden');
+        } else {
+            document.getElementById('connect4-board').classList.add('hidden');
+            document.getElementById('chess-board').classList.remove('hidden');
+        }
+        
+        // Update status message
+        if (gameType === 'connect4') {
+            this.updateStatus('🔴 Connect 4 selected! Choose a game mode to start.');
+        } else {
+            this.updateStatus('♛ Chess selected! Choose a game mode to start.');
+        }
+    }
+
+    handleChessMove(row, col) {
+        if (this.gameType !== 'chess') return;
+        
+        // For now, just a placeholder - chess logic would go here
+        console.log(`Chess move: ${row}, ${col}`);
+        
+        // TODO: Implement full chess game logic
+        // This would include:
+        // - Piece selection and movement validation
+        // - Turn management
+        // - Check/checkmate detection
+        // - Online multiplayer integration
+        // - CPU opponent for chess
     }
 
     dropPiece(col) {
@@ -1172,8 +1281,17 @@ class Connect4Game {
         document.getElementById('room-info').textContent = '';
         this.disableChatInput();
         this.resetBoard();
-    document.getElementById('player1-name').textContent = 'Player 1';
-    document.getElementById('player2-name').textContent = 'Player 2';
+        document.getElementById('player1-name').textContent = 'Player 1';
+        document.getElementById('player2-name').textContent = 'Player 2';
+        
+        // Reset player indicators to default avatars
+        const player2Indicator = document.querySelector('.player2 .player-indicator');
+        if (player2Indicator) {
+            player2Indicator.classList.remove('cpu-freddy', 'cpu-michael', 'cpu-jason');
+            player2Indicator.classList.add('yellow');
+        }
+        this.currentCpuCharacter = null;
+        
         this.currentPlayer = 1;
         this.updatePlayerIndicators();
         this.updateControlButtons();
@@ -1306,21 +1424,39 @@ class Connect4Game {
         this.myPlayerNumber = 1;
         this.isMyTurn = true;
         
+        // Select random CPU character
+        const cpuCharacters = [
+            { name: 'Freddy', cssClass: 'cpu-freddy' },
+            { name: 'Michael', cssClass: 'cpu-michael' },
+            { name: 'Jason', cssClass: 'cpu-jason' }
+        ];
+        this.currentCpuCharacter = cpuCharacters[Math.floor(Math.random() * cpuCharacters.length)];
+        
         this.resetBoard();
         
         document.getElementById('player1-name').textContent = 'You';
         const difficultyLabels = {
-            'easy': 'Easy CPU',
-            'medium': 'Medium CPU', 
-            'hard': 'Hard CPU'
+            'easy': 'Easy',
+            'medium': 'Medium', 
+            'hard': 'Hard'
         };
-        document.getElementById('player2-name').textContent = difficultyLabels[difficulty];
+        const cpuDisplayName = `${this.currentCpuCharacter.name} (${difficultyLabels[difficulty]} CPU)`;
+        document.getElementById('player2-name').textContent = cpuDisplayName;
+        
+        // Update player 2 avatar to use the selected CPU character
+        const player2Indicator = document.querySelector('.player2 .player-indicator');
+        if (player2Indicator) {
+            // Remove any existing CPU classes
+            player2Indicator.classList.remove('yellow', 'cpu-freddy', 'cpu-michael', 'cpu-jason');
+            // Add the selected CPU character class
+            player2Indicator.classList.add(this.currentCpuCharacter.cssClass);
+        }
         
         this.updatePlayerIndicators();
-        this.updateStatus(`🤖 Playing vs ${difficultyLabels[difficulty]} • Your turn!`);
+        this.updateStatus(`🤖 Playing vs ${cpuDisplayName} • Your turn!`);
         this.updateControlButtons();
         this.disableChatInput(); // No chat in CPU mode
-        document.getElementById('room-info').textContent = `Single Player vs ${difficultyLabels[difficulty]}`;
+        document.getElementById('room-info').textContent = `Single Player vs ${cpuDisplayName}`;
         this.hideInviteActions();
         const rematchBtn = document.getElementById('rematch-btn');
         if (rematchBtn) rematchBtn.classList.add('hidden');

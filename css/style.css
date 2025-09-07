@@ -438,6 +438,125 @@ main {
 
 /* Column header styles removed (numeric headers no longer displayed) */
 
+/* Game type selector */
+.game-type-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    justify-content: center;
+}
+
+.game-type-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    background: #2a2d36;
+    border: 2px solid #3a3d46;
+    color: #e1e5eb;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.game-type-btn:hover {
+    border-color: #4a7c59;
+    background: #2f3239;
+}
+
+.game-type-btn.active {
+    background: #4a7c59;
+    border-color: #5a8c69;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Game board container */
+#game-board-container {
+    position: relative;
+    width: 100%;
+    height: auto;
+}
+
+/* Chess board styles */
+.chess-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 0;
+    aspect-ratio: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    border: 3px solid #2c3e50;
+    border-radius: 8px;
+    background: #34495e;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.chess-square {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    user-select: none;
+}
+
+.chess-square.light {
+    background-color: #f0d9b5;
+}
+
+.chess-square.dark {
+    background-color: #b58863;
+}
+
+.chess-square:hover {
+    opacity: 0.8;
+}
+
+.chess-square.selected {
+    background-color: #7fa650 !important;
+}
+
+.chess-square.possible-move {
+    position: relative;
+}
+
+.chess-square.possible-move::after {
+    content: '';
+    position: absolute;
+    width: 30%;
+    height: 30%;
+    background-color: #7fa650;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+.chess-piece {
+    font-size: 28px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Board visibility control */
+.board.hidden {
+    display: none;
+}
+
+/* Responsive chess board */
+@media (max-width: 768px) {
+    .chess-board {
+        max-width: 320px;
+    }
+    
+    .chess-square {
+        font-size: 20px;
+    }
+    
+    .chess-piece {
+        font-size: 20px;
+    }
+}
+
 .controls {
     display: flex;
     flex-direction: column;
