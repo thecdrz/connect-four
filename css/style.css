@@ -23,11 +23,11 @@ body {
 .logo-section {
     text-align: center;
     margin-top: 0;
-    margin-bottom: 0; /* remove extra gap under logo */
+    margin-bottom: -48px; /* Compensate for logo height increase */
 }
 
 .game-logo {
-    max-height: 320px; /* Reduced size to bring board up */
+    max-height: 368px; /* 15% larger */
     width: auto;
     display: block;
     margin: 0 auto;
