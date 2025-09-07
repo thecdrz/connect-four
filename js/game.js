@@ -3,6 +3,7 @@ class Connect4Game {
         this.board = Array(6).fill().map(() => Array(7).fill(0));
         this.currentPlayer = 1;
         this.gameActive = false;
+    this.inRoom = false; // distinguishes having joined/created a room vs just connected to server
         this.isMyTurn = false;
         this.myPlayerNumber = null;
         this.myPlayerName = null;
@@ -24,10 +25,7 @@ class Connect4Game {
         this.createBoard();
         this.updateStatus('Connecting to server...');
         this.disableChatInput();
-        // Ensure correct button states initially
-        document.getElementById('leave-game-btn').classList.add('hidden');
-        document.getElementById('new-game-btn').classList.remove('hidden');
-        document.getElementById('join-game-btn').classList.remove('hidden');
+    this.updateControlButtons();
     }
 
     initializeAudio() {
@@ -78,34 +76,42 @@ class Connect4Game {
             this.updateConnectionStatus('connected', 'Connected');
             this.updateStatus('Connected! Click "New Game" or "Join Game" to start playing.');
             this.sounds.connect.play();
+            this.inRoom = false; // fresh connection not in a room
+            this.gameActive = false;
+            this.updateControlButtons();
         });
 
         this.socket.on('disconnect', () => {
             this.updateConnectionStatus('disconnected', 'Disconnected');
             this.updateStatus('Disconnected from server');
             this.gameActive = false;
+            this.inRoom = false;
+            this.updateControlButtons();
         });
 
         this.socket.on('gameCreated', (data) => {
             this.gameId = data.gameId;
             this.myPlayerNumber = 1;
             this.myPlayerName = data.playerName;
-            this.updateStatus(`Game created! Room ID: ${this.gameId}. Waiting for another player...`);
+            this.inRoom = true;
+            // Avoid duplicating room code (shown separately in #room-info)
+            this.updateStatus('Game created! Waiting for another player to join...');
             document.getElementById('room-info').textContent = `Room: ${this.gameId}`;
             this.hideNameModal();
             this.enableChatInput();
-            this.showLeaveGameButton();
+            this.updateControlButtons();
         });
 
         this.socket.on('gameJoined', (data) => {
             this.gameId = data.gameId;
             this.myPlayerNumber = data.playerNumber;
             this.myPlayerName = data.playerName;
+            this.inRoom = true;
             this.updateStatus('Joined game! Starting...');
             document.getElementById('room-info').textContent = `Room: ${this.gameId}`;
             this.hideNameModal();
             this.enableChatInput();
-            this.showLeaveGameButton();
+            this.updateControlButtons();
         });
 
         this.socket.on('gameStart', (data) => {
@@ -115,6 +121,7 @@ class Connect4Game {
             this.resetBoard();
             this.updatePlayerIndicators();
             this.updateStatus(this.isMyTurn ? 'Your turn!' : "Opponent's turn");
+            this.updateControlButtons();
         });
 
         this.socket.on('moveMade', (data) => {
@@ -149,7 +156,8 @@ class Connect4Game {
         this.socket.on('playerDisconnected', () => {
             this.gameActive = false;
             this.updateStatus('Opponent disconnected');
-            this.showNewJoinGameButtons();
+            // Still in room; allow leave button only
+            this.updateControlButtons();
         });
 
         this.socket.on('playersUpdated', (data) => {
@@ -796,24 +804,23 @@ class Connect4Game {
     }
 
     // Button state management
-    showLeaveGameButton() {
-        document.getElementById('new-game-btn').classList.add('hidden');
-        document.getElementById('join-game-btn').classList.add('hidden');
-        document.getElementById('leave-game-btn').classList.remove('hidden');
-    }
-
-    showNewJoinGameButtons() {
-        document.getElementById('new-game-btn').classList.remove('hidden');
-        document.getElementById('join-game-btn').classList.remove('hidden');
-        document.getElementById('leave-game-btn').classList.add('hidden');
-        
-        // Clear game state
-        this.gameId = null;
-        this.myPlayerNumber = null;
-        this.myPlayerName = null;
-        this.gameActive = false;
-        document.getElementById('room-info').textContent = '';
-        this.disableChatInput();
+    updateControlButtons() {
+        const newBtn = document.getElementById('new-game-btn');
+        const joinBtn = document.getElementById('join-game-btn');
+        const leaveBtn = document.getElementById('leave-game-btn');
+        // States:
+        // 1. Not in room: show New & Join only.
+        // 2. In room but game not active (waiting/opponent left): show Leave only.
+        // 3. In active game: show Leave only.
+        if (!this.inRoom) {
+            newBtn.classList.remove('hidden');
+            joinBtn.classList.remove('hidden');
+            leaveBtn.classList.add('hidden');
+        } else {
+            newBtn.classList.add('hidden');
+            joinBtn.classList.add('hidden');
+            leaveBtn.classList.remove('hidden');
+        }
     }
 
     // Leave game confirmation
@@ -843,8 +850,22 @@ class Connect4Game {
         }
         
         this.hideLeaveConfirmation();
-        this.showNewJoinGameButtons();
-        this.updateStatus('Left the game. Click "New Game" or "Join Game" to start playing.');
+    // Clear game state locally
+    this.gameId = null;
+    this.myPlayerNumber = null;
+    this.myPlayerName = null;
+    this.inRoom = false;
+    this.gameActive = false;
+    document.getElementById('room-info').textContent = '';
+    this.disableChatInput();
+    // Reset board UI & player labels
+    this.resetBoard();
+    document.getElementById('player1-name').textContent = 'Player 1 (Red)';
+    document.getElementById('player2-name').textContent = 'Player 2 (Yellow)';
+    this.currentPlayer = 1;
+    this.updatePlayerIndicators();
+    this.updateControlButtons();
+    this.updateStatus('Left the game. Click "New Game" or "Join Game" to start playing.');
     }
 }
 

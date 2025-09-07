@@ -11,19 +11,23 @@ body {
     color: #333;
 }
 
+/* Utility */
+.hidden { display: none !important; }
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 6px 20px 18px; /* further reduced top padding */
 }
 
 .logo-section {
     text-align: center;
-    margin-bottom: 20px;
+    margin-top: 0; /* eliminate extra gap */
+    margin-bottom: 2px; /* minimal spacing below logo */
 }
 
 .game-logo {
-    max-height: 200px;
+    max-height: 330px; /* +10% */
     width: auto;
     display: block;
     margin: 0 auto;
@@ -39,7 +43,7 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 4px; /* pull board even closer */
 }
 
 h1 {
@@ -52,7 +56,7 @@ h1 {
 .game-status {
     background: rgba(255,255,255,0.9);
     border-radius: 10px;
-    padding: 15px;
+    padding: 10px 14px; /* more compact */
     margin: 0 auto;
     max-width: 400px;
 }
@@ -360,7 +364,7 @@ main {
     }
     
     .game-logo {
-        max-height: 140px;
+        max-height: 220px; /* +10% mobile */
     }
     
     .fallback-title {
