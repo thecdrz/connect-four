@@ -23,5 +23,15 @@
     "wins": 0,
     "losses": 1,
     "games": 1
+  },
+  "ee": {
+    "wins": 1,
+    "losses": 0,
+    "games": 1
+  },
+  "dddd": {
+    "wins": 0,
+    "losses": 1,
+    "games": 1
   }
 }
