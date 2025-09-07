@@ -10,6 +10,10 @@ class Connect4Game {
         this.socket = null;
         this.gameId = null;
         this.pendingAction = null; // 'create' or 'join'
+        this.audioEnabled = true;
+        this.sounds = {};
+        
+        this.initializeAudio();
         
         this.initializeGame();
         this.initializeSocket();
@@ -22,12 +26,54 @@ class Connect4Game {
         this.disableChatInput();
     }
 
+    initializeAudio() {
+        // We'll create audio using Web Audio API or simple Audio objects
+        // For now, we'll use simple Audio objects with data URLs (we'll enhance this)
+        this.sounds = {
+            drop: this.createBeepSound(400, 0.1), // Drop piece sound
+            win: this.createBeepSound(800, 0.3),  // Win sound
+            click: this.createBeepSound(600, 0.05), // Button click
+            connect: this.createBeepSound(500, 0.1), // Connection sound
+            chat: this.createBeepSound(300, 0.05), // Chat message
+        };
+    }
+
+    createBeepSound(frequency, duration) {
+        // Simple beep sound generator
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            return {
+                play: () => {
+                    if (!this.audioEnabled) return;
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration);
+                }
+            };
+        } catch (e) {
+            // Fallback for browsers that don't support Web Audio API
+            return { play: () => {} };
+        }
+    }
+
     initializeSocket() {
         this.socket = io();
         
         this.socket.on('connect', () => {
             this.updateConnectionStatus('connected', 'Connected');
             this.updateStatus('Connected! Click "New Game" or "Join Game" to start playing.');
+            this.sounds.connect.play();
         });
 
         this.socket.on('disconnect', () => {
@@ -67,6 +113,9 @@ class Connect4Game {
 
         this.socket.on('moveMade', (data) => {
             this.makeMove(data.col, data.player, false);
+            if (data.player !== this.myPlayerNumber) {
+                this.sounds.drop.play();
+            }
         });
 
         this.socket.on('gameWon', (data) => {
@@ -74,6 +123,10 @@ class Connect4Game {
             const isWinner = data.winner === this.myPlayerNumber;
             this.highlightWinningCells(data.winningCells);
             const winnerName = data.winnerName || `Player ${data.winner}`;
+            
+            // Play win sound
+            this.sounds.win.play();
+            
             this.showModal(
                 isWinner ? '🎉 You Won!' : '😔 You Lost!',
                 isWinner ? 
@@ -98,6 +151,9 @@ class Connect4Game {
 
         this.socket.on('chatMessage', (data) => {
             this.addChatMessage(data);
+            if (data.playerNumber !== this.myPlayerNumber) {
+                this.sounds.chat.play();
+            }
         });
 
         this.socket.on('leaderboard', (data) => {
@@ -112,32 +168,36 @@ class Connect4Game {
     setupEventListeners() {
         // Name modal listeners
         document.getElementById('start-new-game').addEventListener('click', () => {
-            this.pendingAction = 'create';
-            this.tryStartGame();
+            this.sounds.click.play();
+            this.selectGameMode('create');
         });
 
         document.getElementById('start-join-game').addEventListener('click', () => {
-            this.pendingAction = 'join';
-            document.getElementById('join-room-input').classList.remove('hidden');
+            this.sounds.click.play();
+            this.selectGameMode('join');
         });
 
-        document.getElementById('confirm-join').addEventListener('click', () => {
-            this.tryStartGame();
+        document.getElementById('final-action').addEventListener('click', () => {
+            this.executeAction();
+        });
+
+        document.getElementById('player-name').addEventListener('input', () => {
+            this.validateModalInputs();
         });
 
         document.getElementById('player-name').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                if (this.pendingAction === 'create') {
-                    this.tryStartGame();
-                } else if (this.pendingAction === 'join') {
-                    document.getElementById('join-room-input').classList.remove('hidden');
-                }
+            if (e.key === 'Enter' && this.pendingAction) {
+                this.executeAction();
             }
         });
 
+        document.getElementById('room-id-input').addEventListener('input', () => {
+            this.validateModalInputs();
+        });
+
         document.getElementById('room-id-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.tryStartGame();
+            if (e.key === 'Enter' && this.pendingAction === 'join') {
+                this.executeAction();
             }
         });
 
@@ -184,6 +244,11 @@ class Connect4Game {
 
         document.getElementById('name-modal-close').addEventListener('click', () => {
             this.hideNameModal();
+        });
+
+        // Audio toggle
+        document.getElementById('audio-toggle').addEventListener('click', () => {
+            this.toggleAudio();
         });
     }
 
@@ -237,9 +302,17 @@ class Connect4Game {
         // Update board state
         this.board[row][col] = player;
         
-        // Update UI
+        // Update UI with animation
         const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-        cell.classList.add(player === 1 ? 'red' : 'yellow');
+        const colorClass = player === 1 ? 'red' : 'yellow';
+        
+        // Add drop animation
+        cell.classList.add('dropping', colorClass);
+        
+        // Play drop sound for local moves
+        if (isLocalMove) {
+            this.sounds.drop.play();
+        }
         
         // Check for win
         if (this.checkWin(row, col, player)) {
@@ -410,22 +483,89 @@ class Connect4Game {
 
     hideNameModal() {
         document.getElementById('name-modal').classList.add('hidden');
-        // Clear the form
+        this.resetModal();
+    }
+
+    resetModal() {
+        // Clear form
         document.getElementById('player-name').value = '';
         document.getElementById('room-id-input').value = '';
-        document.getElementById('join-room-input').classList.add('hidden');
+        
+        // Reset UI state
+        document.getElementById('room-input-group').classList.add('hidden');
+        document.getElementById('final-action').classList.add('hidden');
+        document.getElementById('final-action').disabled = true;
+        
+        // Show action buttons
+        document.getElementById('start-new-game').style.display = 'inline-flex';
+        document.getElementById('start-join-game').style.display = 'inline-flex';
+        
+        // Reset title
+        document.getElementById('modal-title').textContent = '🎮 Welcome to Connect 4!';
+        document.getElementById('modal-subtitle').textContent = 'Enter your name to get started';
+        
         this.pendingAction = null;
     }
 
-    tryStartGame() {
-        const playerName = document.getElementById('player-name').value.trim();
-        if (!playerName || playerName.length < 2) {
-            alert('Please enter a name with at least 2 characters');
-            return;
+    selectGameMode(mode) {
+        this.pendingAction = mode;
+        
+        // Hide action buttons
+        document.getElementById('start-new-game').style.display = 'none';
+        document.getElementById('start-join-game').style.display = 'none';
+        
+        // Update title and subtitle
+        if (mode === 'create') {
+            document.getElementById('modal-title').innerHTML = '🎆 Create New Game';
+            document.getElementById('modal-subtitle').textContent = 'Start a new game and share the room code with friends!';
+            document.getElementById('final-action-text').textContent = 'Create Game';
+        } else {
+            document.getElementById('modal-title').innerHTML = '🚀 Join Game';
+            document.getElementById('modal-subtitle').textContent = 'Enter the room code to join an existing game!';
+            document.getElementById('room-input-group').classList.remove('hidden');
+            document.getElementById('final-action-text').textContent = 'Join Game';
         }
+        
+        // Show final action button
+        document.getElementById('final-action').classList.remove('hidden');
+        this.validateModalInputs();
+    }
 
+    validateModalInputs() {
+        const playerNameInput = document.getElementById('player-name');
+        const roomIdInput = document.getElementById('room-id-input');
+        const playerName = playerNameInput.value.trim();
+        const roomId = roomIdInput.value.trim();
+        const finalButton = document.getElementById('final-action');
+        
+        // Validate player name
+        let nameValid = playerName.length >= 2;
+        playerNameInput.classList.remove('error', 'success');
+        if (playerName.length > 0) {
+            playerNameInput.classList.add(nameValid ? 'success' : 'error');
+        }
+        
+        let isValid = nameValid;
+        
+        // Validate room ID if joining
+        if (this.pendingAction === 'join') {
+            let roomValid = roomId.length === 6;
+            roomIdInput.classList.remove('error', 'success');
+            if (roomId.length > 0) {
+                roomIdInput.classList.add(roomValid ? 'success' : 'error');
+            }
+            isValid = isValid && roomValid;
+        }
+        
+        finalButton.disabled = !isValid;
+        finalButton.style.opacity = isValid ? '1' : '0.6';
+    }
+
+    executeAction() {
+        const playerName = document.getElementById('player-name').value.trim();
+        
         if (!this.socket) {
-            alert('Not connected to server');
+            this.showError('Not connected to server');
             return;
         }
 
@@ -433,12 +573,29 @@ class Connect4Game {
             this.socket.emit('createGame', { playerName });
         } else if (this.pendingAction === 'join') {
             const roomId = document.getElementById('room-id-input').value.trim().toUpperCase();
-            if (!roomId || roomId.length !== 6) {
-                alert('Please enter a valid 6-character room ID');
-                return;
-            }
             this.socket.emit('joinGame', { gameId: roomId, playerName });
         }
+    }
+
+    showError(message) {
+        const subtitle = document.getElementById('modal-subtitle');
+        const modalContent = document.querySelector('#name-modal .modal-content');
+        
+        // Shake animation for error feedback
+        modalContent.style.animation = 'shake 0.5s ease-in-out';
+        
+        subtitle.textContent = `⚠️ ${message}`;
+        subtitle.style.color = '#e74c3c';
+        
+        setTimeout(() => {
+            modalContent.style.animation = '';
+            subtitle.style.color = '';
+            if (this.pendingAction === 'create') {
+                subtitle.textContent = 'Start a new game and share the room code with friends!';
+            } else {
+                subtitle.textContent = 'Enter the room code to join an existing game!';
+            }
+        }, 3000);
     }
 
     // Player name functions
@@ -536,6 +693,18 @@ class Connect4Game {
 
     hideLeaderboardModal() {
         document.getElementById('leaderboard-modal').classList.add('hidden');
+    }
+
+    toggleAudio() {
+        this.audioEnabled = !this.audioEnabled;
+        const button = document.getElementById('audio-toggle');
+        button.innerHTML = this.audioEnabled ? '🔊 Audio: ON' : '🔇 Audio: OFF';
+        button.style.opacity = this.audioEnabled ? '1' : '0.6';
+        
+        // Play a test sound when enabling
+        if (this.audioEnabled) {
+            this.sounds.click.play();
+        }
     }
 }
 

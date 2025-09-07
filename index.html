@@ -20,16 +20,34 @@
         <div id="name-modal" class="modal hidden">
             <div class="modal-content">
                 <button id="name-modal-close" class="modal-close-btn">&times;</button>
-                <h2>Enter Your Name</h2>
-                <input type="text" id="player-name" placeholder="Your name (min 2 characters)" maxlength="20">
-                <div class="name-modal-buttons">
-                    <button id="start-new-game" class="btn">New Game</button>
-                    <button id="start-join-game" class="btn">Join Game</button>
+                <h2 id="modal-title">🎮 Welcome to Connect 4!</h2>
+                <p id="modal-subtitle">Enter your name to get started</p>
+                
+                <div class="input-group">
+                    <label for="player-name">Your Name</label>
+                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" required>
                 </div>
-                <div id="join-room-input" class="hidden">
-                    <input type="text" id="room-id-input" placeholder="Enter Room ID" maxlength="6">
-                    <button id="confirm-join" class="btn">Join</button>
+                
+                <div id="room-input-group" class="input-group hidden">
+                    <label for="room-id-input">Room Code</label>
+                    <input type="text" id="room-id-input" placeholder="6-character code" maxlength="6" style="text-transform: uppercase">
                 </div>
+                
+                <div class="action-buttons">
+                    <button id="start-new-game" class="btn btn-primary">
+                        <span class="btn-icon">🎯</span>
+                        Create Game
+                    </button>
+                    <button id="start-join-game" class="btn btn-secondary">
+                        <span class="btn-icon">🚪</span>
+                        Join Game
+                    </button>
+                </div>
+                
+                <button id="final-action" class="btn btn-success hidden" disabled>
+                    <span class="btn-icon">🎮</span>
+                    <span id="final-action-text">Let's Play!</span>
+                </button>
             </div>
         </div>
 
@@ -51,9 +69,10 @@
                 </div>
 
                 <div class="controls">
-                    <button id="new-game-btn" class="btn">New Game</button>
-                    <button id="join-game-btn" class="btn">Join Game</button>
-                    <button id="show-leaderboard" class="btn secondary">Leaderboard</button>
+                    <button id="new-game-btn" class="btn">🎯 New Game</button>
+                    <button id="join-game-btn" class="btn">🚪 Join Game</button>
+                    <button id="show-leaderboard" class="btn secondary">🏆 Leaderboard</button>
+                    <button id="audio-toggle" class="btn secondary small">🔊 Audio: ON</button>
                 </div>
             </div>
 
