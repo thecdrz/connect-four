@@ -87,10 +87,53 @@ body {
     transform: translateY(0);
 }
 
+.difficulty-btn[data-difficulty="easy"] {
+    background: #2d4a32;
+    border-color: #4a7c59;
+}
+
+.difficulty-btn[data-difficulty="easy"]:hover {
+    background: #345238;
+    border-color: #5a8c69;
+}
+
+.difficulty-btn[data-difficulty="medium"] {
+    background: #4a3d2d;
+    border-color: #7c6549;
+}
+
+.difficulty-btn[data-difficulty="medium"]:hover {
+    background: #524534;
+    border-color: #8c7559;
+}
+
+.difficulty-btn[data-difficulty="hard"] {
+    background: #4a2d2d;
+    border-color: #7c4949;
+}
+
+.difficulty-btn[data-difficulty="hard"]:hover {
+    background: #523434;
+    border-color: #8c5959;
+}
+
 .difficulty-icon {
     font-size: 24px;
     min-width: 30px;
     text-align: center;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
+.difficulty-btn[data-difficulty="easy"] .difficulty-info strong {
+    color: #7dff9c;
+}
+
+.difficulty-btn[data-difficulty="medium"] .difficulty-info strong {
+    color: #ffd700;
+}
+
+.difficulty-btn[data-difficulty="hard"] .difficulty-info strong {
+    color: #ff6b6b;
 }
 
 .difficulty-info {
@@ -102,13 +145,15 @@ body {
     font-size: 16px;
     margin-bottom: 4px;
     color: #ffffff;
+    font-weight: 600;
 }
 
 .difficulty-info small {
     display: block;
     font-size: 13px;
-    color: #8b9296;
+    color: #b8bdc3;
     line-height: 1.3;
+    font-weight: normal;
 }
 
 /* Responsive difficulty buttons */
