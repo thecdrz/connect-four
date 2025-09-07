@@ -112,15 +112,22 @@ main {
 
 /* Player indicators now use character images */
 .player-indicator {
-    width: 44px; /* +15% from 38px */
-    height: 44px;
+    width: 53px; /* was 44px, +~20% */
+    height: 53px;
     border-radius: 50%;
     border: 2px solid #222;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    box-shadow: 0 0 4px rgba(0,0,0,0.4);
+    box-shadow: 0 0 5px rgba(0,0,0,0.45);
+    transition: transform 0.25s ease;
 }
+
+/* Slight hover emphasis (desktop) */
+.player:hover .player-indicator { transform: scale(1.05); }
+
+/* Increase player name font size proportionally */
+.player { font-size: 1.2em; }
 
 /* Red player image */
 .player-indicator.red {
