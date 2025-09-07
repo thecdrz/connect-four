@@ -369,6 +369,22 @@ main {
     background-color: #f1c40f; /* fallback */
 }
 
+/* CPU character avatars */
+.player-indicator.cpu-freddy {
+    background-image: url('../assets/Freddy-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
+.player-indicator.cpu-michael {
+    background-image: url('../assets/Michael-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
+.player-indicator.cpu-jason {
+    background-image: url('../assets/Jason-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
 .player.active .player-indicator {
     box-shadow: 0 0 15px rgba(52, 152, 219, 0.8);
     border-color: #3498db;
@@ -736,10 +752,7 @@ main {
 /* Chat messages (no own scrollbar) */
 .chat-messages {
     flex: 0 0 auto;
-    border: 2px solid #ecf0f1;
-    border-radius: 10px;
     padding: 15px;
-    background: #fafafa;
     margin-bottom: 8px;
     width: 100%;
 }
