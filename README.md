@@ -101,6 +101,26 @@ When deploying, ensure the host uses the `PORT` environment variable. The `serve
 └── README.md           # This file
 ```
 
+## Architecture Overview
+
+Room-based real-time model with an in-memory lobby & spectator layer:
+
+- **Authoritative server state** per game (players, spectators, board, recent chat slice).
+- **Lobby projection** broadcast (`lobby:update`) on create/join/leave/finish/remove.
+- **Spectators** receive a snapshot (`spectatorJoined`) and neutral game over messaging (no rematch button).
+- **Guards** prevent double-joining or self-occupying both player slots; spectators blocked from player-only actions.
+- **Adaptive layout** logic keeps chat + lobby bounded to board height.
+
+### Socket Events
+Client → Server: `createGame`, `joinGame`, `leaveGame`, `makeMove`, `requestRematch`, `sendChatMessage`, `typing`, `lobby:subscribe`, `lobby:unsubscribe`, `spectateGame`, `stopSpectating`.
+
+Server → Client: `gameCreated`, `gameJoined`, `gameStart`, `playersUpdated`, `moveMade`, `gameWon`, `gameDraw`, `playerDisconnected`, `rematchVote`, `rematchStarted`, `chatMessage`, `typing`, `lobby:update`, `spectatorJoined`, `spectateEnded`, `error`.
+
+Notes:
+- Lobby update payloads are intentionally small (no boards) for efficiency.
+- Spectator chat is read-only; history trimmed to recent messages.
+- Rematch button only rendered for active players.
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
@@ -111,57 +131,11 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-## Visuals
+## Changelog
 
-### Screenshot
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-![Game Screenshot](assets/ScreenshotDemo.png)
-
-> Shows desktop layout with board, chat, avatars, invite controls, and status panel.
-
-## Release Notes
-
-### vNext (Current Main)
-#### Added
-- Lobby panel with real-time subscription (Socket event + periodic REST fallback hook ready).
-- Spectator mode with: live board snapshot sync, turn status ("Spectating • <Player>'s turn"), recent chat history (read‑only), and visual “Spectating” state in lobby.
-- Stop Watching control to exit spectator mode (clears board & restores lobby state).
-- Player name map + unified turn status helper (prevents incorrect "Your turn" messaging for spectators).
-- Single‑active‑game guard (server + client) preventing double join / self‑playing.
-- Height management upgrade: lobby panel participates in dynamic sizing; chat shrinks first, then lobby, preserving min dimensions.
-- Neutral spectator game over modals without rematch button; rematch only visible to active players.
-- Invite link system with Copy Link & Copy Code buttons (auto-join via `?room=` + optional `host` param).
-- Name persistence (localStorage) and auto-prefill when opening an invite link.
-- Typing indicator with animated ellipsis in chat.
-- Rematch flow: synchronized vote -> automatic board reset + fresh start events.
-- CPU mode (single player) integrated alongside online mode selection.
-- Deep status panel enhancements (visibility, consistent sizing) and inline invite actions.
-- Improved Game Over modal with unified button layout and consistent sizing.
-- Dynamic chat height management script to ensure chat never extends below board on desktop.
-
-#### Changed
-- Spectating hides all other Spectate buttons and replaces the active game's button with a disabled “Spectating” badge.
-- Game Over modal logic refactored: spectators receive neutral text; players retain win/lose phrasing & sound.
-- Enlarged avatars (~+20%) and adjusted spacing; removed legacy color suffixes from names.
-- Modal actions styled for clarity; rematch button uses gradient accent.
-- Column headers centered & slimmed; tightened vertical whitespace for reduced scroll.
-- Chat container uses responsive JS + CSS hybrid sizing (no layout push + smooth resize on window changes or content growth).
-- Back button behavior in Join flow: after any failed room code attempt, Back now closes the modal instead of returning to the name step (faster recovery path).
-
-#### Fixed
-- Spectator view incorrectly showing player loss messaging & rematch button (now neutral & hidden).
-- Active Spectate button still visible while already spectating (now replaced with disabled “Spectating” label).
-- CSS media query / brace mismatch that previously broke mobile styles.
-- Layout wrapping issues—chat reliably remains to the right until breakpoint.
-- Rapid successive room creation/join edge cases causing inconsistent button states.
-- Initial multiplayer load where chat window could extend a few pixels below board before second player joined (now corrected immediately via `adjustChatHeight`).
-- Join modal sometimes reopening on Back after invalid room codes; now closes cleanly once an error/attempt occurs.
-
-#### Removed
-- Legacy jukebox/audio UI panel (replaced by simple audio toggle).
-- Experimental themed board/piece sprite test (reverted to cleaner default palette).
-
-#### Upcoming (Backlog / Ideas)
+### Upcoming (Backlog / Ideas)
 - Scroll shadows / subtle fade edges for overflowing lobby & chat.
 - Transition polish on dynamic height changes & lobby row updates.
 - Dark / high-contrast + colorblind accessibility theme.
