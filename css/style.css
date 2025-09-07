@@ -27,7 +27,7 @@ body {
 }
 
 .game-logo {
-    max-height: 380px; /* +15% from previous 330px */
+    max-height: 320px; /* Reduced size to bring board up */
     width: auto;
     display: block;
     margin: 0 auto;
@@ -43,7 +43,7 @@ body {
 
 header {
     text-align: center;
-    margin-bottom: 6px; /* tighter space before game board */
+    margin-bottom: 20px; /* Increased space between status and board */
 }
 
 h1 {
@@ -189,8 +189,9 @@ main {
 
 .controls {
     display: flex;
-    gap: 15px;
+    gap: 10px; /* Reduced gap between buttons */
     justify-content: center;
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
 }
 
 .btn {
@@ -241,8 +242,8 @@ main {
 }
 
 .btn.small {
-    padding: 8px 16px;
-    font-size: 0.9em;
+    padding: 6px 12px; /* Made audio button smaller */
+    font-size: 0.85em;
 }
 
 .sidebar {
