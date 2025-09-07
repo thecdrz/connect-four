@@ -1,4 +1,6 @@
-# Connect 4 - Online Multiplayer Game
+# Connect 4 - Onl- 🔄 **Rematch Flow:** Post-game rematch button with vote sync (starts when both players agree).
+- 📊 **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
+- 🗂️ **Name Persistence:** Recently used player name auto-fills when opening an invite link. Multiplayer Game
 
 A real-time, browser-based multiplayer Connect 4 game built with Node.js and Socket.IO. This project features a clean user interface, real-time chat (with typing indicator), character avatars, invite links, rematches, and a persistent leaderboard.
 
@@ -136,7 +138,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
 ### Upcoming (Backlog / Ideas)
-- Scroll shadows / subtle fade edges for overflowing lobby & chat.
 - Transition polish on dynamic height changes & lobby row updates.
 - Dark / high-contrast + colorblind accessibility theme.
 - Emoji reactions / lightweight emote bar.

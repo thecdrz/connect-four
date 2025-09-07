@@ -33,5 +33,15 @@
     "wins": 0,
     "losses": 1,
     "games": 1
+  },
+  "Client": {
+    "wins": 1,
+    "losses": 0,
+    "games": 1
+  }
+}  "Host": {
+    "wins": 0,
+    "losses": 1,
+    "games": 1
   }
 }

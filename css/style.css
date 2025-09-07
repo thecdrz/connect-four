@@ -17,11 +17,12 @@ body {
     border: 1px solid #2c2c37;
     border-radius: 8px;
     padding: 0.5rem 0.75rem 0.6rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0; /* remove gap so panel sits flush at bottom */
     font-size: 0.75rem;
     line-height: 1.2;
     max-height: 200px;
     overflow-y: auto;
+    scroll-behavior: smooth;
 }
 .lobby-header {
     font-weight: 600;
@@ -53,6 +54,26 @@ body {
 .watching-tag { font-size:0.55rem; padding:2px 6px; background:#284d7a; border-radius:4px; color:#b4d9ff; letter-spacing:0.05em; }
 .btn.tiny.spectating { background:#1e3a5c; color:#b4d9ff; border:1px solid #2d567f; cursor:default; }
 .btn.tiny.spectating:hover { transform:none; background:#1e3a5c; }
+
+/* Scroll shadow utility (applied to chat & lobby) */
+.scroll-shadow { position: relative; overflow-y: auto; --fade-size: 18px; }
+.scroll-shadow::before, .scroll-shadow::after { content:""; position: sticky; left:0; right:0; height: var(--fade-size); pointer-events:none; z-index: 2; opacity:0; transition: opacity .18s ease; }
+.scroll-shadow::before { top:0; background: linear-gradient(to bottom, rgba(0,0,0,0.35), rgba(0,0,0,0)); border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.scroll-shadow::after { bottom:0; background: linear-gradient(to top, rgba(0,0,0,0.35), rgba(0,0,0,0)); border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
+.scroll-shadow.has-top-shadow::before { opacity:1; }
+.scroll-shadow.has-bottom-shadow::after { opacity:1; }
+
+/* Light theme adaptation for chat (lighter gradient) */
+.chat-container .scroll-shadow::before { background: linear-gradient(to bottom, rgba(0,0,0,0.18), rgba(0,0,0,0)); }
+.chat-container .scroll-shadow::after { background: linear-gradient(to top, rgba(0,0,0,0.18), rgba(0,0,0,0)); }
+
+/* Lobby row enter animation */
+@keyframes fadeSlideIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
+.lobby-row { animation: fadeSlideIn .25s ease; }
+
+/* Smooth max-height transitions for dynamic panel adjustments */
+#lobby-panel { transition: max-height .25s ease; }
+.chat-messages-window { transition: height .25s ease, max-height .25s ease; }
 
 @media (min-width:1051px) {
   .lobby-panel { font-size:0.7rem; }
@@ -110,6 +131,7 @@ body {
     font-size: 3em;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     margin: 0;
+    display: none; /* hidden unless logo fails */
 }
 
 header { display: none; }
@@ -277,28 +299,7 @@ main {
     100% { transform: scale(1); }
 }
 
-.column-header {
-    grid-row: 1;
-    background: transparent;
-    cursor: pointer;
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 70px; /* match cell width for perfect centering */
-    height: 22px; /* slim header height */
-    font-weight: bold;
-    font-size: 13px;
-    color: #bdc3c7;
-    transition: color 0.3s ease;
-    padding: 0;
-}
-
-.column-header:hover {
-    color: #3498db;
-    background: transparent;
-    transform: none;
-}
+/* Column header styles removed (numeric headers no longer displayed) */
 
 .controls {
     display: flex;
@@ -430,6 +431,12 @@ main {
     height: auto; /* allow natural height */
 }
 
+/* Flex growth for central chat region so bottom sections anchor reliably */
+.chat-container { flex: 1 1 auto; display:flex; flex-direction:column; min-height:0; }
+.chat-messages-window { flex:1 1 auto; min-height:140px; }
+.game-status { flex:0 0 auto; }
+.game-info, .lobby-panel { flex:0 0 auto; }
+
 .chat-container, .game-info {
     background: white;
     padding: 15px;
@@ -442,32 +449,17 @@ main {
     margin-bottom: 0;
 }
 
-.game-info h3 {
-    color: #2c3e50;
-    margin-bottom: 10px;
-    font-size: 1.2em;
-}
+/* Compact How to Play section to reduce vertical footprint */
+.game-info { padding:10px 12px; }
+.bottom-stack { margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+.game-info h3 { color:#2c3e50; margin:0 0 4px; font-size:0.8rem; letter-spacing:.5px; text-transform:uppercase; }
+.game-info ul { list-style:none; display:flex; flex-wrap:wrap; gap:2px 10px; margin:0; padding:0; line-height:1.1; }
+.game-info li { margin:0; padding:0 0 0 10px; position:relative; font-size:0.68rem; font-weight:500; white-space:nowrap; }
+.game-info li:before { content:"•"; position:absolute; left:0; top:0; color:#3498db; font-weight:700; }
 
-.game-info ul {
-    list-style: none;
-    line-height: 1.4;
-    margin-bottom: 15px;
-}
-
-.game-info li {
-    margin-bottom: 4px;
-    padding-left: 18px;
-    position: relative;
-    font-size: 0.95em;
-}
-
-.game-info li:before {
-    content: "•";
-    color: #3498db;
-    font-weight: bold;
-    position: absolute;
-    left: 0;
-}
+/* Allow lobby to grow without forcing its own scrollbar unless necessary */
+.lobby-panel { max-height:160px; }
+@media (min-width:1051px){ .lobby-panel { max-height:150px; } }
 
 /* Modal */
 .modal {
@@ -612,35 +604,27 @@ main {
 }
 
 /* Chat Styles */
-.chat-container {
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    flex: 0 0 auto; /* do not stretch to match board */
-    min-height: 0;
-}
+/* Duplicate .chat-container block removed; initial flex settings earlier in file apply */
 
 .chat-container h3 {
     color: #2c3e50;
     margin-bottom: 15px;
-    border-bottom: 2px solid #ecf0f1;
     padding-bottom: 10px;
 }
 
+/* Chat messages (no own scrollbar) */
 .chat-messages {
-    flex: 1 1 auto; /* dynamic height to align chat bottom with board */
-    min-height: 250px; /* baseline height */
-    max-height: 420px; /* prevent layout push; scroll within */
+    flex: 0 0 auto;
     border: 2px solid #ecf0f1;
     border-radius: 10px;
     padding: 15px;
-    overflow-y: auto;
     background: #fafafa;
     margin-bottom: 8px;
     width: 100%;
 }
 
-.chat-messages-window { flex:0 0 auto; display:flex; height: var(--chat-height-desktop); max-height: var(--chat-height-desktop); transition: height .18s ease, max-height .18s ease; }
+/* Wrapper becomes scroll container */
+.chat-messages-window { flex:1 1 auto; display:flex; flex-direction:column; overflow-y:auto; height:auto; max-height:var(--chat-height-desktop); transition: height .18s ease, max-height .18s ease; }
 
 .chat-message {
     margin-bottom: 15px;
@@ -649,12 +633,7 @@ main {
     max-width: 80%;
 }
 
-.chat-messages {
-    flex: 0 0 auto; /* do not allow growth to push layout */
-    height: 100%;
-    max-height: 100%;
-    min-height: 0;
-}
+/* Removed duplicate .chat-messages override that forced fixed height to allow smoother flex sizing */
 
 .chat-message.other {
     background: #f2f4f7; /* subtle contrasting tint */
@@ -753,6 +732,21 @@ main {
 }
 
 /* Input Groups */
+#room-code-input {
+    text-transform: uppercase;
+}
+
+/* Name input specific styling */
+#player-name {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+#player-name::placeholder {
+    color: #95a5a6;
+    font-style: italic;
+}
+
 .input-group {
     margin-bottom: 20px;
 }
@@ -774,6 +768,8 @@ main {
     box-sizing: border-box;
     transition: all 0.3s ease;
     background: #fafbfc;
+    line-height: 1.4;
+    min-height: 48px;
 }
 
 .input-group input:focus {

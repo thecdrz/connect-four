@@ -37,6 +37,8 @@ class Connect4Game {
     window.addEventListener('resize', () => this.adjustChatHeight());
     // Defer initial calculation until layout settles
     setTimeout(()=> this.adjustChatHeight(), 10);
+    // Initialize scroll shadows shortly after layout
+    setTimeout(()=> this.initScrollShadows && this.initScrollShadows(), 30);
     }
 
     initializeGame() {
@@ -191,6 +193,8 @@ class Connect4Game {
             this.updateControlButtons();
             const stopBtn = document.getElementById('stop-spectating-btn');
             if (stopBtn) stopBtn.classList.remove('hidden');
+            // Ensure consistent sidebar sizing for spectators
+            setTimeout(()=>this.adjustChatHeight(), 30);
         });
 
         this.socket.on('spectateEnded', () => {
@@ -508,15 +512,7 @@ class Connect4Game {
     createBoard() {
         const boardElement = document.getElementById('game-board');
         boardElement.innerHTML = '';
-
-        // Create column headers (for clicking)
-        for (let col = 0; col < 7; col++) {
-            const header = document.createElement('div');
-            header.className = 'column-header';
-            header.textContent = col + 1;
-            header.addEventListener('click', () => this.dropPiece(col));
-            boardElement.appendChild(header);
-        }
+    // Removed numeric column headers to reduce visual clutter
 
         // Create board cells
         for (let row = 0; row < 6; row++) {
@@ -999,6 +995,8 @@ class Connect4Game {
     if (data.playerNumber !== this.myPlayerNumber) this.clearTypingIndicator();
     // Recalculate chat height in case new content causes sidebar overflow relative to board
     this.adjustChatHeight();
+        const chatWindow = document.querySelector('.chat-messages-window');
+        this.updateScrollShadows && this.updateScrollShadows(chatWindow);
     }
 
     escapeHtml(text) {
@@ -1158,17 +1156,45 @@ class Connect4Game {
     renderLobby() {
         const containerId = 'lobby-panel';
         let panel = document.getElementById(containerId);
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar) return;
+        // Ensure bottom stack wrapper exists (holds How To Play + Lobby)
+        let bottomStack = sidebar.querySelector('.bottom-stack');
+        if (!bottomStack) {
+            bottomStack = document.createElement('div');
+            bottomStack.className = 'bottom-stack';
+            // Place directly after existing .game-info if present, else append at end
+            const gameInfo = sidebar.querySelector('.game-info');
+            if (gameInfo && gameInfo.nextSibling) {
+                sidebar.insertBefore(bottomStack, gameInfo.nextSibling);
+                bottomStack.appendChild(gameInfo); // move inside wrapper
+            } else if (gameInfo) {
+                sidebar.removeChild(gameInfo);
+                bottomStack.appendChild(gameInfo);
+                sidebar.appendChild(bottomStack);
+            } else {
+                sidebar.appendChild(bottomStack);
+            }
+        } else {
+            // If game-info sits outside, move it in
+            const gameInfo = sidebar.querySelector('.game-info:not(.bottom-stack > .game-info)');
+            if (gameInfo && gameInfo.parentElement !== bottomStack) {
+                bottomStack.insertBefore(gameInfo, bottomStack.firstChild);
+            }
+        }
         if (!panel) {
-            // Create a lightweight panel under status area (non-intrusive)
-            const sidebar = document.querySelector('.sidebar');
-            if (!sidebar) return;
             panel = document.createElement('div');
             panel.id = containerId;
             panel.className = 'lobby-panel';
-            sidebar.insertBefore(panel, document.getElementById('chat-section'));
+            bottomStack.appendChild(panel);
+        } else if (panel.parentElement !== bottomStack) {
+            bottomStack.appendChild(panel);
         }
         if (!this.lobbyGames || this.lobbyGames.length === 0) {
             panel.innerHTML = '<div class="lobby-empty">No open games. Create one!</div>';
+            // register for scroll shadow updates even if empty
+            this._registerShadowElement && this._registerShadowElement(panel);
+            this.updateScrollShadows && this.updateScrollShadows(panel);
             return;
         }
                         const rows = this.lobbyGames.map(g => {
@@ -1197,6 +1223,8 @@ class Connect4Game {
                             </div>`;
                         }).join('');
         panel.innerHTML = `<div class="lobby-header">Lobby</div>${rows}`;
+        this._registerShadowElement && this._registerShadowElement(panel);
+        this.updateScrollShadows && this.updateScrollShadows(panel);
     }
 
     quickJoinGame(gameId) {
@@ -1415,6 +1443,8 @@ class Connect4Game {
         if (!desktop) {
             chatWindow.style.height = '';
             chatWindow.style.maxHeight = '';
+            const sidebarMobile = document.querySelector('.sidebar');
+            if (sidebarMobile) sidebarMobile.style.height = '';
             return;
         }
 
@@ -1423,10 +1453,12 @@ class Connect4Game {
         const lobbyPanel = document.getElementById('lobby-panel');
         if (!gameArea || !sidebar) return;
         const boardHeight = gameArea.offsetHeight; // total left column height
+    // Lock sidebar height to board height for alignment; enable flex internals to distribute space
+    sidebar.style.height = boardHeight + 'px';
 
-        // Reset dynamic heights to measure natural layout
-        chatWindow.style.height = '';
-        chatWindow.style.maxHeight = '';
+    // Reset dynamic heights (flex will stretch). We'll prefer max-height only if overflow scenario.
+    chatWindow.style.height = '';
+    chatWindow.style.maxHeight = '';
         if (lobbyPanel) lobbyPanel.style.maxHeight = '';
 
         const minChat = 120;
@@ -1440,21 +1472,19 @@ class Connect4Game {
 
         let sizes = measure();
 
-        if (sizes.sidebar <= boardHeight) {
-            // Fit within board: ensure chat doesn't exceed available remainder
-            const nonChatSpace = sizes.sidebar - sizes.chat;
-            const available = boardHeight - nonChatSpace - 4;
-            const target = Math.min(sizes.chat, available);
-            chatWindow.style.maxHeight = target + 'px';
-            chatWindow.style.height = target + 'px';
+    // For flex layout we only intervene if overflow occurs beyond board height
+    if (sizes.sidebar <= boardHeight) {
+            // After normalization no overflow; still refresh shadows and exit
+            this.updateScrollShadows && this.updateScrollShadows(chatWindow);
+            const lobbyPanel2 = document.getElementById('lobby-panel');
+            if (lobbyPanel2) this.updateScrollShadows && this.updateScrollShadows(lobbyPanel2);
             return;
         }
 
-        // First shrink chat down to min
-        let overflow = sizes.sidebar - boardHeight;
-        let chatTarget = Math.max(minChat, sizes.chat - overflow);
-        chatWindow.style.height = chatTarget + 'px';
-        chatWindow.style.maxHeight = chatTarget + 'px';
+    // First shrink chat via max-height (allow scroll within)
+    let overflow = sizes.sidebar - boardHeight;
+    let chatTarget = Math.max(minChat, sizes.chat - overflow);
+    chatWindow.style.maxHeight = chatTarget + 'px';
         sizes = measure();
 
         if (sizes.sidebar <= boardHeight) return; // done
@@ -1471,9 +1501,43 @@ class Connect4Game {
         if (sizes.sidebar > boardHeight && chatTarget > minChat) {
             const finalOverflow = sizes.sidebar - boardHeight;
             chatTarget = Math.max(minChat, chatTarget - finalOverflow);
-            chatWindow.style.height = chatTarget + 'px';
             chatWindow.style.maxHeight = chatTarget + 'px';
         }
+        // Refresh scroll shadows
+        this.updateScrollShadows && this.updateScrollShadows(chatWindow);
+        if (lobbyPanel) this.updateScrollShadows && this.updateScrollShadows(lobbyPanel);
+    }
+
+    /* Scroll shadow helpers */
+    _registerShadowElement(el) {
+        if (!el) return;
+        el.classList.add('scroll-shadow');
+        if (!this._shadowElements) this._shadowElements = new Set();
+        this._shadowElements.add(el);
+        if (!el._c4ShadowListener) {
+            el.addEventListener('scroll', () => this.updateScrollShadows(el));
+            el._c4ShadowListener = true;
+        }
+    }
+
+    initScrollShadows() {
+        this._registerShadowElement(document.querySelector('.chat-messages-window'));
+        const lobby = document.getElementById('lobby-panel');
+        if (lobby) this._registerShadowElement(lobby);
+        this.refreshAllScrollShadows();
+    }
+
+    refreshAllScrollShadows() {
+        if (!this._shadowElements) return;
+        this._shadowElements.forEach(el => this.updateScrollShadows(el));
+    }
+
+    updateScrollShadows(el) {
+        if (!el) return;
+        const atTop = el.scrollTop <= 1;
+        const atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) <= 1;
+        el.classList.toggle('has-top-shadow', !atTop);
+        el.classList.toggle('has-bottom-shadow', !atBottom);
     }
 }
 

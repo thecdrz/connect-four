@@ -19,7 +19,39 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname)));
 
 // Game state management
+// Map<gameId, Connect4Game>
 const games = new Map();
+
+// Helper to build lobby game summaries
+function getLobbyGames() {
+    const list = [];
+    for (const [id, game] of games.entries()) {
+        const host = game.players[0]?.name || null;
+        const opponent = game.players[1]?.name || null;
+        let status = 'waiting';
+        if (game.players.length === 2 && game.gameActive) status = 'playing';
+        else if (!game.gameActive && game.players.length > 0 && (game._finished || game._winner)) status = 'finished';
+        list.push({
+            gameId: id,
+            host,
+            opponent,
+            status,
+            players: game.players.length,
+            spectators: game.spectators ? game.spectators.size : 0,
+            createdAt: game.createdAt
+        });
+    }
+    // Show waiting games first, then playing, then finished; newest first within groups
+    return list.sort((a,b)=>{
+        const order = {waiting:0, playing:1, finished:2};
+        if (order[a.status] !== order[b.status]) return order[a.status]-order[b.status];
+        return b.createdAt - a.createdAt;
+    });
+}
+
+function emitLobbyUpdate(ioInstance) {
+    ioInstance.to('lobby').emit('lobby:update', getLobbyGames());
+}
 
 // Player stats storage
 let playerStats = {};
@@ -93,6 +125,10 @@ class Connect4Game {
         this.gameActive = false;
         this.chatMessages = [];
     this.rematchVotes = new Set();
+    this.spectators = new Set(); // sockets watching the game
+    this.createdAt = Date.now();
+    this._finished = false;
+    this._winner = null;
     }
 
     addPlayer(socket, playerName) {
@@ -155,7 +191,7 @@ class Connect4Game {
         });
 
         // Check for win
-        if (this.checkWin(row, col, playerNumber)) {
+    if (this.checkWin(row, col, playerNumber)) {
             this.gameActive = false;
             const winningCells = this.getWinningCells(row, col, playerNumber);
             const winnerName = this.players.find(p => p.playerNumber === playerNumber)?.name;
@@ -165,6 +201,8 @@ class Connect4Game {
             if (winnerName) updatePlayerStats(winnerName, true);
             if (loserName) updatePlayerStats(loserName, false);
             
+            this._finished = true;
+            this._winner = playerNumber;
             this.broadcast('gameWon', { 
                 winner: playerNumber, 
                 winnerName,
@@ -174,7 +212,7 @@ class Connect4Game {
         }
 
         // Check for draw
-        if (this.isBoardFull()) {
+    if (this.isBoardFull()) {
             this.gameActive = false;
             
             // Update stats for both players (no winner in draw)
@@ -182,6 +220,7 @@ class Connect4Game {
                 if (player.name) updatePlayerStats(player.name, false);
             });
             
+            this._finished = true;
             this.broadcast('gameDraw');
             return true;
         }
@@ -304,9 +343,9 @@ class Connect4Game {
     }
 
     broadcast(event, data = {}) {
-        this.players.forEach(player => {
-            player.socket.emit(event, data);
-        });
+    this.players.forEach(player => player.socket.emit(event, data));
+    // Also broadcast to spectators
+    this.spectators.forEach(sock => sock.emit(event, data));
     }
 
     resetForRematch() {
@@ -314,9 +353,30 @@ class Connect4Game {
         this.currentPlayer = 1;
         this.gameActive = true;
         this.rematchVotes.clear();
+        this._finished = false;
+        this._winner = null;
         this.broadcast('rematchStarted', {});
         // Send fresh gameStart payload (reuse for simplicity)
         this.players.forEach(p => p.socket.emit('gameStart', { gameId: this.gameId, playerNumber: p.playerNumber }));
+    }
+
+    addSpectator(socket) {
+        this.spectators.add(socket);
+    }
+
+    removeSpectator(socket) {
+        if (this.spectators.has(socket)) this.spectators.delete(socket);
+    }
+
+    getState() {
+        return {
+            gameId: this.gameId,
+            board: this.board,
+            currentPlayer: this.currentPlayer,
+            gameActive: this.gameActive,
+            players: this.players.map(p=>({ number:p.playerNumber, name:p.name })),
+            chat: this.chatMessages.slice(-30)
+        };
     }
 }
 
@@ -329,8 +389,22 @@ function generateGameId() {
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
+    // Lobby subscription
+    socket.on('lobby:subscribe', () => {
+        socket.join('lobby');
+        socket.emit('lobby:update', getLobbyGames());
+    });
+
+    socket.on('lobby:unsubscribe', () => {
+        socket.leave('lobby');
+    });
+
     // Create new game
     socket.on('createGame', ({ playerName }) => {
+        if (socket.gameId) {
+            socket.emit('error', { message: 'Already in a game. Leave first.' });
+            return;
+        }
         if (!playerName || playerName.trim().length < 2) {
             socket.emit('error', { message: 'Player name must be at least 2 characters' });
             return;
@@ -353,10 +427,15 @@ io.on('connection', (socket) => {
         // Only emit gameCreated with the gameId, addPlayer already handles the rest
         socket.emit('gameCreated', { gameId });
         console.log(`Game created: ${gameId} by ${playerName}`);
+    emitLobbyUpdate(io); // new game added
     });
 
     // Join existing game
     socket.on('joinGame', ({ gameId, playerName }) => {
+        if (socket.gameId) {
+            socket.emit('error', { message: 'Already in a game. Leave first.' });
+            return;
+        }
         if (!playerName || playerName.trim().length < 2) {
             socket.emit('error', { message: 'Player name must be at least 2 characters' });
             return;
@@ -385,6 +464,31 @@ io.on('connection', (socket) => {
             socket.playerNumber = playerNumber;
             socket.playerName = playerName.trim();
             console.log(`Player ${playerNumber} (${playerName}) joined game: ${gameId}`);
+            emitLobbyUpdate(io); // status may have changed (waiting->playing)
+        }
+    });
+
+    // Spectate existing game
+    socket.on('spectateGame', ({ gameId }) => {
+        const game = games.get(gameId);
+        if (!game) {
+            socket.emit('error', { message: 'Game not found' });
+            return;
+        }
+        if (socket.gameId) {
+            socket.emit('error', { message: 'Already in a game' });
+            return;
+        }
+        game.addSpectator(socket);
+        socket.spectatingGameId = gameId;
+        socket.emit('spectatorJoined', game.getState());
+    });
+
+    socket.on('stopSpectating', () => {
+        if (socket.spectatingGameId) {
+            const g = games.get(socket.spectatingGameId);
+            if (g) g.removeSpectator(socket);
+            socket.spectatingGameId = null;
         }
     });
 
@@ -451,6 +555,7 @@ io.on('connection', (socket) => {
         game.broadcast('rematchVote', { votes, needed: game.players.length });
         if (game.players.length === 2 && game.rematchVotes.size === game.players.length) {
             game.resetForRematch();
+                emitLobbyUpdate(io); // game back to active playing
         }
     });
 
@@ -473,12 +578,20 @@ io.on('connection', (socket) => {
                 if (game.players.length === 0) {
                     games.delete(socket.gameId);
                     console.log(`Game removed after player left: ${socket.gameId}`);
+                    emitLobbyUpdate(io);
+                } else {
+                    emitLobbyUpdate(io);
                 }
             }
             // Clear game association from socket
             socket.gameId = null;
             socket.playerNumber = null;
             socket.playerName = null;
+        }
+        if (socket.spectatingGameId) {
+            const g = games.get(socket.spectatingGameId);
+            if (g) g.removeSpectator(socket);
+            socket.spectatingGameId = null;
         }
     });
 
@@ -495,8 +608,15 @@ io.on('connection', (socket) => {
                 if (game.players.length === 0) {
                     games.delete(socket.gameId);
                     console.log(`Game removed: ${socket.gameId}`);
+                    emitLobbyUpdate(io);
+                } else {
+                    emitLobbyUpdate(io);
                 }
             }
+        }
+        if (socket.spectatingGameId) {
+            const g = games.get(socket.spectatingGameId);
+            if (g) g.removeSpectator(socket);
         }
     });
 });
@@ -504,6 +624,11 @@ io.on('connection', (socket) => {
 // Serve the main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Simple lobby API (optional polling fallback)
+app.get('/api/games', (req, res) => {
+    res.json({ games: getLobbyGames() });
 });
 
 // Start server
