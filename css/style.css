@@ -197,12 +197,26 @@ main {
     transform: none;
 }
 
+.btn.secondary {
+    background: #95a5a6;
+}
+
+.btn.secondary:hover {
+    background: #7f8c8d;
+}
+
+.btn.small {
+    padding: 8px 16px;
+    font-size: 0.9em;
+}
+
 .sidebar {
     background: white;
     border-radius: 20px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    max-width: 300px;
+    max-width: 350px;
+    min-width: 300px;
     height: fit-content;
 }
 
@@ -340,5 +354,264 @@ main {
     .sidebar {
         max-width: 100%;
         margin-top: 20px;
+        min-width: auto;
+    }
+}
+
+/* Chat Styles */
+.chat-container {
+    margin-bottom: 30px;
+}
+
+.chat-container h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 10px;
+}
+
+.chat-messages {
+    height: 200px;
+    border: 2px solid #ecf0f1;
+    border-radius: 10px;
+    padding: 15px;
+    overflow-y: auto;
+    background: #fafafa;
+    margin-bottom: 15px;
+}
+
+.chat-message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 80%;
+}
+
+.chat-message.own {
+    background: #e3f2fd;
+    margin-left: auto;
+    border-bottom-right-radius: 3px;
+}
+
+.chat-message.other {
+    background: #f5f5f5;
+    margin-right: auto;
+    border-bottom-left-radius: 3px;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.85em;
+}
+
+.player-name {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.message-time {
+    color: #7f8c8d;
+}
+
+.message-text {
+    line-height: 1.4;
+}
+
+.chat-input-container {
+    display: flex;
+    gap: 10px;
+}
+
+.chat-input-container input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.chat-input-container input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.chat-input-container input:disabled {
+    background: #ecf0f1;
+    color: #7f8c8d;
+}
+
+/* Name Modal Styles */
+#name-modal {
+    display: flex;
+}
+
+#name-modal.hidden {
+    display: none;
+}
+
+#name-modal .modal-content {
+    max-width: 400px;
+}
+
+#name-modal input {
+    width: 100%;
+    padding: 12px;
+    margin: 15px 0;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+#name-modal input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.name-modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.name-modal-buttons button {
+    flex: 1;
+}
+
+#join-room-input {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ecf0f1;
+}
+
+#join-room-input input {
+    margin-bottom: 15px;
+}
+
+/* Modal close button */
+.modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #7f8c8d;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.modal-close-btn:hover {
+    background: #ecf0f1;
+    color: #2c3e50;
+}
+
+.modal-content {
+    position: relative;
+}
+
+/* Leaderboard Styles */
+.leaderboard-table {
+    margin: 20px 0;
+}
+
+.leaderboard-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 60px 80px;
+    gap: 15px;
+    padding: 15px;
+    background: #2c3e50;
+    color: white;
+    font-weight: bold;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+}
+
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 60px 80px;
+    gap: 15px;
+    padding: 12px 15px;
+    border-bottom: 1px solid #ecf0f1;
+    transition: background-color 0.3s ease;
+}
+
+.leaderboard-row:hover {
+    background: #f8f9fa;
+}
+
+.leaderboard-row.highlight {
+    background: #e8f5e8;
+    border-color: #27ae60;
+}
+
+.leaderboard-row:last-child {
+    border-bottom: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.leaderboard-row .rank {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.leaderboard-row .player {
+    font-weight: 500;
+}
+
+.leaderboard-row .wins,
+.leaderboard-row .win-rate {
+    text-align: center;
+    font-weight: bold;
+}
+
+.no-data {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    margin: 40px 0;
+}
+
+/* Enhanced Modal Styles */
+.modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Mobile Responsiveness for New Features */
+@media (max-width: 768px) {
+    .chat-messages {
+        height: 150px;
+    }
+    
+    .leaderboard-header,
+    .leaderboard-row {
+        grid-template-columns: 50px 1fr 50px 70px;
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .name-modal-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .chat-input-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn.small {
+        width: 100%;
     }
 }

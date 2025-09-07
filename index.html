@@ -11,21 +11,38 @@
         <header>
             <h1>Connect 4</h1>
             <div class="game-status">
-                <div id="status">Waiting for players...</div>
+                <div id="status">Welcome to Connect 4! Click "New Game" or "Join Game" to start.</div>
                 <div id="room-info"></div>
             </div>
         </header>
+
+        <!-- Player Name Input Modal -->
+        <div id="name-modal" class="modal hidden">
+            <div class="modal-content">
+                <button id="name-modal-close" class="modal-close-btn">&times;</button>
+                <h2>Enter Your Name</h2>
+                <input type="text" id="player-name" placeholder="Your name (min 2 characters)" maxlength="20">
+                <div class="name-modal-buttons">
+                    <button id="start-new-game" class="btn">New Game</button>
+                    <button id="start-join-game" class="btn">Join Game</button>
+                </div>
+                <div id="join-room-input" class="hidden">
+                    <input type="text" id="room-id-input" placeholder="Enter Room ID" maxlength="6">
+                    <button id="confirm-join" class="btn">Join</button>
+                </div>
+            </div>
+        </div>
 
         <main>
             <div class="game-area">
                 <div class="players-info">
                     <div class="player player1">
                         <div class="player-indicator red"></div>
-                        <span>Player 1 (Red)</span>
+                        <span id="player1-name">Player 1 (Red)</span>
                     </div>
                     <div class="player player2">
                         <div class="player-indicator yellow"></div>
-                        <span>Player 2 (Yellow)</span>
+                        <span id="player2-name">Player 2 (Yellow)</span>
                     </div>
                 </div>
 
@@ -34,12 +51,25 @@
                 </div>
 
                 <div class="controls">
-                    <button id="new-game" class="btn">New Game</button>
-                    <button id="join-game" class="btn">Join Game</button>
+                    <button id="new-game-btn" class="btn">New Game</button>
+                    <button id="join-game-btn" class="btn">Join Game</button>
+                    <button id="show-leaderboard" class="btn secondary">Leaderboard</button>
                 </div>
             </div>
 
             <div class="sidebar">
+                <!-- Chat Area -->
+                <div class="chat-container">
+                    <h3>Game Chat</h3>
+                    <div id="chat-messages" class="chat-messages">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200" disabled>
+                        <button id="send-chat" class="btn small" disabled>Send</button>
+                    </div>
+                </div>
+
                 <div class="game-info">
                     <h3>How to Play</h3>
                     <ul>
@@ -58,11 +88,23 @@
         </main>
     </div>
 
+    <!-- Game Over Modal -->
     <div id="modal" class="modal hidden">
         <div class="modal-content">
             <h2 id="modal-title">Game Over</h2>
             <p id="modal-message"></p>
             <button id="modal-close" class="btn">Close</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>🏆 Top 10 Leaderboard</h2>
+            <div id="leaderboard-content">
+                <!-- Leaderboard will be populated here -->
+            </div>
+            <button id="leaderboard-close" class="btn">Close</button>
         </div>
     </div>
 

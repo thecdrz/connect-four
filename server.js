@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const fs = require('fs').promises;
 
 const app = express();
 const server = http.createServer(app);
@@ -20,6 +21,69 @@ app.use(express.static(path.join(__dirname)));
 // Game state management
 const games = new Map();
 
+// Player stats storage
+let playerStats = {};
+const STATS_FILE = path.join(__dirname, 'player-stats.json');
+
+// Load player stats from file
+async function loadPlayerStats() {
+    try {
+        const data = await fs.readFile(STATS_FILE, 'utf8');
+        playerStats = JSON.parse(data);
+    } catch (error) {
+        // File doesn't exist or is invalid, start with empty stats
+        playerStats = {};
+    }
+}
+
+// Save player stats to file
+async function savePlayerStats() {
+    try {
+        await fs.writeFile(STATS_FILE, JSON.stringify(playerStats, null, 2));
+    } catch (error) {
+        console.error('Error saving player stats:', error);
+    }
+}
+
+// Update player stats
+function updatePlayerStats(playerName, won) {
+    if (!playerStats[playerName]) {
+        playerStats[playerName] = { wins: 0, losses: 0, games: 0 };
+    }
+    
+    playerStats[playerName].games++;
+    if (won) {
+        playerStats[playerName].wins++;
+    } else {
+        playerStats[playerName].losses++;
+    }
+    
+    savePlayerStats();
+}
+
+// Get top 10 leaderboard
+function getLeaderboard() {
+    const players = Object.entries(playerStats)
+        .map(([name, stats]) => ({
+            name,
+            wins: stats.wins,
+            losses: stats.losses,
+            games: stats.games,
+            winRate: stats.games > 0 ? (stats.wins / stats.games * 100).toFixed(1) : 0
+        }))
+        .sort((a, b) => {
+            // Sort by wins first, then by win rate
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            return parseFloat(b.winRate) - parseFloat(a.winRate);
+        })
+        .slice(0, 10);
+    
+    return players;
+}
+
+// Initialize stats on startup
+loadPlayerStats();
+
 class Connect4Game {
     constructor(gameId) {
         this.gameId = gameId;
@@ -27,16 +91,23 @@ class Connect4Game {
         this.players = [];
         this.currentPlayer = 1;
         this.gameActive = false;
+        this.chatMessages = [];
     }
 
-    addPlayer(socket) {
+    addPlayer(socket, playerName) {
         if (this.players.length < 2) {
             const playerNumber = this.players.length + 1;
-            this.players.push({ socket, playerNumber });
+            this.players.push({ socket, playerNumber, name: playerName });
             
             socket.emit('gameJoined', { 
                 gameId: this.gameId, 
-                playerNumber 
+                playerNumber,
+                playerName
+            });
+
+            // Send updated player list to all players
+            this.broadcast('playersUpdated', {
+                players: this.players.map(p => ({ number: p.playerNumber, name: p.name }))
             });
 
             // Start game when both players are connected
@@ -86,8 +157,16 @@ class Connect4Game {
         if (this.checkWin(row, col, playerNumber)) {
             this.gameActive = false;
             const winningCells = this.getWinningCells(row, col, playerNumber);
+            const winnerName = this.players.find(p => p.playerNumber === playerNumber)?.name;
+            const loserName = this.players.find(p => p.playerNumber !== playerNumber)?.name;
+            
+            // Update player stats
+            if (winnerName) updatePlayerStats(winnerName, true);
+            if (loserName) updatePlayerStats(loserName, false);
+            
             this.broadcast('gameWon', { 
                 winner: playerNumber, 
+                winnerName,
                 winningCells 
             });
             return true;
@@ -96,6 +175,12 @@ class Connect4Game {
         // Check for draw
         if (this.isBoardFull()) {
             this.gameActive = false;
+            
+            // Update stats for both players (no winner in draw)
+            this.players.forEach(player => {
+                if (player.name) updatePlayerStats(player.name, false);
+            });
+            
             this.broadcast('gameDraw');
             return true;
         }
@@ -195,6 +280,28 @@ class Connect4Game {
         }
     }
 
+    addChatMessage(playerNumber, message) {
+        const player = this.players.find(p => p.playerNumber === playerNumber);
+        if (!player) return false;
+        
+        const chatMessage = {
+            playerNumber,
+            playerName: player.name,
+            message: message.trim(),
+            timestamp: new Date().toISOString()
+        };
+        
+        this.chatMessages.push(chatMessage);
+        
+        // Keep only last 50 messages
+        if (this.chatMessages.length > 50) {
+            this.chatMessages = this.chatMessages.slice(-50);
+        }
+        
+        this.broadcast('chatMessage', chatMessage);
+        return true;
+    }
+
     broadcast(event, data = {}) {
         this.players.forEach(player => {
             player.socket.emit(event, data);
@@ -212,21 +319,32 @@ io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
     // Create new game
-    socket.on('createGame', () => {
+    socket.on('createGame', ({ playerName }) => {
+        if (!playerName || playerName.trim().length < 2) {
+            socket.emit('error', { message: 'Player name must be at least 2 characters' });
+            return;
+        }
+        
         const gameId = generateGameId();
         const game = new Connect4Game(gameId);
         games.set(gameId, game);
         
-        const playerNumber = game.addPlayer(socket);
+        const playerNumber = game.addPlayer(socket, playerName.trim());
         socket.gameId = gameId;
         socket.playerNumber = playerNumber;
+        socket.playerName = playerName.trim();
         
-        socket.emit('gameCreated', { gameId, playerNumber });
-        console.log(`Game created: ${gameId}`);
+        socket.emit('gameCreated', { gameId, playerNumber, playerName: playerName.trim() });
+        console.log(`Game created: ${gameId} by ${playerName}`);
     });
 
     // Join existing game
-    socket.on('joinGame', ({ gameId }) => {
+    socket.on('joinGame', ({ gameId, playerName }) => {
+        if (!playerName || playerName.trim().length < 2) {
+            socket.emit('error', { message: 'Player name must be at least 2 characters' });
+            return;
+        }
+        
         const game = games.get(gameId);
         
         if (!game) {
@@ -239,11 +357,12 @@ io.on('connection', (socket) => {
             return;
         }
         
-        const playerNumber = game.addPlayer(socket);
+        const playerNumber = game.addPlayer(socket, playerName.trim());
         if (playerNumber) {
             socket.gameId = gameId;
             socket.playerNumber = playerNumber;
-            console.log(`Player ${playerNumber} joined game: ${gameId}`);
+            socket.playerName = playerName.trim();
+            console.log(`Player ${playerNumber} (${playerName}) joined game: ${gameId}`);
         }
     });
 
@@ -267,9 +386,35 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle chat messages
+    socket.on('sendChatMessage', ({ gameId, message }) => {
+        const game = games.get(gameId);
+        
+        if (!game) {
+            socket.emit('error', { message: 'Game not found' });
+            return;
+        }
+        
+        if (!message || message.trim().length === 0) {
+            return;
+        }
+        
+        if (message.trim().length > 200) {
+            socket.emit('error', { message: 'Message too long (max 200 characters)' });
+            return;
+        }
+        
+        game.addChatMessage(socket.playerNumber, message.trim());
+    });
+
+    // Get leaderboard
+    socket.on('getLeaderboard', () => {
+        socket.emit('leaderboard', getLeaderboard());
+    });
+
     // Handle disconnection
     socket.on('disconnect', () => {
-        console.log(`Player disconnected: ${socket.id}`);
+        console.log(`Player disconnected: ${socket.id} (${socket.playerName || 'Unknown'})`);
         
         if (socket.gameId) {
             const game = games.get(socket.gameId);

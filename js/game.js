@@ -5,8 +5,11 @@ class Connect4Game {
         this.gameActive = false;
         this.isMyTurn = false;
         this.myPlayerNumber = null;
+        this.myPlayerName = null;
+        this.opponentName = null;
         this.socket = null;
         this.gameId = null;
+        this.pendingAction = null; // 'create' or 'join'
         
         this.initializeGame();
         this.initializeSocket();
@@ -16,6 +19,7 @@ class Connect4Game {
     initializeGame() {
         this.createBoard();
         this.updateStatus('Connecting to server...');
+        this.disableChatInput();
     }
 
     initializeSocket() {
@@ -23,7 +27,7 @@ class Connect4Game {
         
         this.socket.on('connect', () => {
             this.updateConnectionStatus('connected', 'Connected');
-            this.updateStatus('Connected! Click "New Game" to start or "Join Game" to join an existing game.');
+            this.updateStatus('Connected! Click "New Game" or "Join Game" to start playing.');
         });
 
         this.socket.on('disconnect', () => {
@@ -35,15 +39,21 @@ class Connect4Game {
         this.socket.on('gameCreated', (data) => {
             this.gameId = data.gameId;
             this.myPlayerNumber = 1;
+            this.myPlayerName = data.playerName;
             this.updateStatus(`Game created! Room ID: ${this.gameId}. Waiting for another player...`);
             document.getElementById('room-info').textContent = `Room: ${this.gameId}`;
+            this.hideNameModal();
+            this.enableChatInput();
         });
 
         this.socket.on('gameJoined', (data) => {
             this.gameId = data.gameId;
             this.myPlayerNumber = data.playerNumber;
+            this.myPlayerName = data.playerName;
             this.updateStatus('Joined game! Starting...');
             document.getElementById('room-info').textContent = `Room: ${this.gameId}`;
+            this.hideNameModal();
+            this.enableChatInput();
         });
 
         this.socket.on('gameStart', (data) => {
@@ -63,9 +73,12 @@ class Connect4Game {
             this.gameActive = false;
             const isWinner = data.winner === this.myPlayerNumber;
             this.highlightWinningCells(data.winningCells);
+            const winnerName = data.winnerName || `Player ${data.winner}`;
             this.showModal(
-                isWinner ? 'You Won!' : 'You Lost!',
-                isWinner ? 'Congratulations! You won the game!' : 'Better luck next time!'
+                isWinner ? '🎉 You Won!' : '😔 You Lost!',
+                isWinner ? 
+                    `Congratulations ${winnerName}! You won the game!` : 
+                    `${winnerName} won this game. Better luck next time!`
             );
         });
 
@@ -79,27 +92,98 @@ class Connect4Game {
             this.updateStatus('Opponent disconnected');
         });
 
+        this.socket.on('playersUpdated', (data) => {
+            this.updatePlayerNames(data.players);
+        });
+
+        this.socket.on('chatMessage', (data) => {
+            this.addChatMessage(data);
+        });
+
+        this.socket.on('leaderboard', (data) => {
+            this.showLeaderboard(data);
+        });
+
         this.socket.on('error', (error) => {
             this.updateStatus(`Error: ${error.message}`);
         });
     }
 
     setupEventListeners() {
-        document.getElementById('new-game').addEventListener('click', () => {
+        // Name modal listeners
+        document.getElementById('start-new-game').addEventListener('click', () => {
+            this.pendingAction = 'create';
+            this.tryStartGame();
+        });
+
+        document.getElementById('start-join-game').addEventListener('click', () => {
+            this.pendingAction = 'join';
+            document.getElementById('join-room-input').classList.remove('hidden');
+        });
+
+        document.getElementById('confirm-join').addEventListener('click', () => {
+            this.tryStartGame();
+        });
+
+        document.getElementById('player-name').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (this.pendingAction === 'create') {
+                    this.tryStartGame();
+                } else if (this.pendingAction === 'join') {
+                    document.getElementById('join-room-input').classList.remove('hidden');
+                }
+            }
+        });
+
+        document.getElementById('room-id-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.tryStartGame();
+            }
+        });
+
+        // New simplified game button listeners
+        document.getElementById('new-game-btn').addEventListener('click', () => {
+            this.pendingAction = 'create';
+            this.showNameModal();
+        });
+
+        document.getElementById('join-game-btn').addEventListener('click', () => {
+            this.pendingAction = 'join';
+            this.showNameModal();
+            setTimeout(() => {
+                document.getElementById('join-room-input').classList.remove('hidden');
+            }, 100);
+        });
+
+        // Leaderboard button
+        document.getElementById('show-leaderboard').addEventListener('click', () => {
             if (this.socket) {
-                this.socket.emit('createGame');
+                this.socket.emit('getLeaderboard');
             }
         });
 
-        document.getElementById('join-game').addEventListener('click', () => {
-            const roomId = prompt('Enter Room ID:');
-            if (roomId && this.socket) {
-                this.socket.emit('joinGame', { gameId: roomId });
+        // Chat listeners
+        document.getElementById('send-chat').addEventListener('click', () => {
+            this.sendChatMessage();
+        });
+
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.sendChatMessage();
             }
         });
 
+        // Modal close listeners
         document.getElementById('modal-close').addEventListener('click', () => {
             this.hideModal();
+        });
+
+        document.getElementById('leaderboard-close').addEventListener('click', () => {
+            this.hideLeaderboardModal();
+        });
+
+        document.getElementById('name-modal-close').addEventListener('click', () => {
+            this.hideNameModal();
         });
     }
 
@@ -315,6 +399,143 @@ class Connect4Game {
 
     hideModal() {
         document.getElementById('modal').classList.add('hidden');
+    }
+
+    // Name modal functions
+    showNameModal() {
+        document.getElementById('name-modal').classList.remove('hidden');
+        document.getElementById('join-room-input').classList.add('hidden');
+        document.getElementById('player-name').focus();
+    }
+
+    hideNameModal() {
+        document.getElementById('name-modal').classList.add('hidden');
+        // Clear the form
+        document.getElementById('player-name').value = '';
+        document.getElementById('room-id-input').value = '';
+        document.getElementById('join-room-input').classList.add('hidden');
+        this.pendingAction = null;
+    }
+
+    tryStartGame() {
+        const playerName = document.getElementById('player-name').value.trim();
+        if (!playerName || playerName.length < 2) {
+            alert('Please enter a name with at least 2 characters');
+            return;
+        }
+
+        if (!this.socket) {
+            alert('Not connected to server');
+            return;
+        }
+
+        if (this.pendingAction === 'create') {
+            this.socket.emit('createGame', { playerName });
+        } else if (this.pendingAction === 'join') {
+            const roomId = document.getElementById('room-id-input').value.trim().toUpperCase();
+            if (!roomId || roomId.length !== 6) {
+                alert('Please enter a valid 6-character room ID');
+                return;
+            }
+            this.socket.emit('joinGame', { gameId: roomId, playerName });
+        }
+    }
+
+    // Player name functions
+    updatePlayerNames(players) {
+        players.forEach(player => {
+            const nameElement = document.getElementById(`player${player.number}-name`);
+            if (nameElement) {
+                nameElement.textContent = `${player.name} (${player.number === 1 ? 'Red' : 'Yellow'})`;
+                if (player.number !== this.myPlayerNumber) {
+                    this.opponentName = player.name;
+                }
+            }
+        });
+    }
+
+    // Chat functions
+    enableChatInput() {
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-chat');
+        chatInput.disabled = false;
+        sendButton.disabled = false;
+    }
+
+    disableChatInput() {
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-chat');
+        chatInput.disabled = true;
+        sendButton.disabled = true;
+    }
+
+    sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+        
+        if (!message || !this.socket || !this.gameId) {
+            return;
+        }
+
+        this.socket.emit('sendChatMessage', { gameId: this.gameId, message });
+        input.value = '';
+    }
+
+    addChatMessage(data) {
+        const messagesContainer = document.getElementById('chat-messages');
+        const messageElement = document.createElement('div');
+        messageElement.className = `chat-message ${data.playerNumber === this.myPlayerNumber ? 'own' : 'other'}`;
+        
+        const time = new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        messageElement.innerHTML = `
+            <div class="message-header">
+                <span class="player-name">${data.playerName}</span>
+                <span class="message-time">${time}</span>
+            </div>
+            <div class="message-text">${this.escapeHtml(data.message)}</div>
+        `;
+        
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Leaderboard functions
+    showLeaderboard(data) {
+        const content = document.getElementById('leaderboard-content');
+        
+        if (data.length === 0) {
+            content.innerHTML = '<p class="no-data">No games played yet!</p>';
+        } else {
+            let html = '<div class="leaderboard-table">';
+            html += '<div class="leaderboard-header">';
+            html += '<span>Rank</span><span>Player</span><span>Wins</span><span>Win Rate</span>';
+            html += '</div>';
+            
+            data.forEach((player, index) => {
+                const rank = index + 1;
+                const trophy = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                html += `<div class="leaderboard-row ${player.name === this.myPlayerName ? 'highlight' : ''}">`;
+                html += `<span class="rank">${trophy}</span>`;
+                html += `<span class="player">${this.escapeHtml(player.name)}</span>`;
+                html += `<span class="wins">${player.wins}</span>`;
+                html += `<span class="win-rate">${player.winRate}%</span>`;
+                html += '</div>';
+            });
+            html += '</div>';
+            content.innerHTML = html;
+        }
+        
+        document.getElementById('leaderboard-modal').classList.remove('hidden');
+    }
+
+    hideLeaderboardModal() {
+        document.getElementById('leaderboard-modal').classList.add('hidden');
     }
 }
 
