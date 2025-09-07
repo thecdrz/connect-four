@@ -113,6 +113,7 @@
                     <div id="chat-messages" class="chat-messages">
                         <!-- Chat messages will appear here -->
                     </div>
+                    <div id="typing-indicator" class="typing-indicator hidden" aria-live="polite"></div>
                     <div class="chat-input-container">
                         <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200" disabled>
                         <button id="send-chat" class="btn small" disabled>Send</button>
@@ -141,6 +142,7 @@
         <div class="modal-content">
             <h2 id="modal-title">Game Over</h2>
             <p id="modal-message"></p>
+            <button id="rematch-btn" class="btn secondary hidden">🔄 Rematch</button>
             <button id="modal-close" class="btn">Close</button>
         </div>
     </div>

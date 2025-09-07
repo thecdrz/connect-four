@@ -92,6 +92,7 @@ class Connect4Game {
         this.currentPlayer = 1;
         this.gameActive = false;
         this.chatMessages = [];
+    this.rematchVotes = new Set();
     }
 
     addPlayer(socket, playerName) {
@@ -307,6 +308,16 @@ class Connect4Game {
             player.socket.emit(event, data);
         });
     }
+
+    resetForRematch() {
+        this.board = Array(6).fill().map(() => Array(7).fill(0));
+        this.currentPlayer = 1;
+        this.gameActive = true;
+        this.rematchVotes.clear();
+        this.broadcast('rematchStarted', {});
+        // Send fresh gameStart payload (reuse for simplicity)
+        this.players.forEach(p => p.socket.emit('gameStart', { gameId: this.gameId, playerNumber: p.playerNumber }));
+    }
 }
 
 // Generate random game ID
@@ -416,6 +427,31 @@ io.on('connection', (socket) => {
         }
         
         game.addChatMessage(socket.playerNumber, message.trim());
+    });
+
+    // Typing indicator
+    socket.on('typing', ({ gameId, isTyping }) => {
+        const game = games.get(gameId);
+        if (!game) return;
+        // Notify opponent only
+        game.players.forEach(p => {
+            if (p.socket !== socket) {
+                p.socket.emit('typing', { playerNumber: socket.playerNumber, isTyping: !!isTyping, playerName: socket.playerName });
+            }
+        });
+    });
+
+    // Rematch handling
+    socket.on('requestRematch', ({ gameId }) => {
+        const game = games.get(gameId);
+        if (!game) return;
+        if (game.gameActive) return; // Only after a game ended
+        game.rematchVotes.add(socket.playerNumber);
+        const votes = Array.from(game.rematchVotes);
+        game.broadcast('rematchVote', { votes, needed: game.players.length });
+        if (game.players.length === 2 && game.rematchVotes.size === game.players.length) {
+            game.resetForRematch();
+        }
     });
 
     // Get leaderboard

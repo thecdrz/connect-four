@@ -15,6 +15,8 @@ class Connect4Game {
         this.audioEnabled = true;
         this.sounds = {};
     this.inviteBaseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/i,'');
+    this.typingTimeout = null;
+    this.iAmTyping = false;
         
         this.initializeAudio();
         
@@ -172,6 +174,28 @@ class Connect4Game {
             }
         });
 
+        this.socket.on('typing', (data) => {
+            this.updateTypingIndicator(data);
+        });
+
+        this.socket.on('rematchVote', ({ votes, needed }) => {
+            const btn = document.getElementById('rematch-btn');
+            if (btn) {
+                btn.textContent = votes.includes(this.myPlayerNumber) ? `⏳ Waiting (${votes.length}/${needed})` : `🔄 Rematch (${votes.length}/${needed})`;
+                btn.disabled = votes.includes(this.myPlayerNumber);
+            }
+        });
+
+        this.socket.on('rematchStarted', () => {
+            const btn = document.getElementById('rematch-btn');
+            if (btn) {
+                btn.classList.add('hidden');
+                btn.disabled = false;
+                btn.textContent = '🔄 Rematch';
+            }
+            this.hideModal();
+        });
+
         this.socket.on('leaderboard', (data) => {
             this.showLeaderboard(data);
         });
@@ -294,10 +318,25 @@ class Connect4Game {
             }
         });
 
+    const chatInput = document.getElementById('chat-input');
+    chatInput.addEventListener('input', () => this.handleTyping());
+    chatInput.addEventListener('blur', () => this.sendTyping(false));
+
         // Modal close listeners
         document.getElementById('modal-close').addEventListener('click', () => {
             this.hideModal();
         });
+
+        const rematchBtn = document.getElementById('rematch-btn');
+        if (rematchBtn) {
+            rematchBtn.addEventListener('click', () => {
+                if (this.socket && this.gameId) {
+                    this.socket.emit('requestRematch', { gameId: this.gameId });
+                    rematchBtn.disabled = true;
+                    rematchBtn.textContent = '⏳ Waiting';
+                }
+            });
+        }
 
         document.getElementById('leaderboard-close').addEventListener('click', () => {
             this.hideLeaderboardModal();
@@ -589,6 +628,13 @@ class Connect4Game {
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-message').textContent = message;
         document.getElementById('modal').classList.remove('hidden');
+        // Reveal rematch button only for online games
+        const btn = document.getElementById('rematch-btn');
+        if (btn && this.gameMode === 'online') {
+            btn.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = '🔄 Rematch';
+        }
     }
 
     hideModal() {
@@ -822,6 +868,8 @@ class Connect4Game {
         
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    // Clear typing indicator when message received from opponent
+    if (data.playerNumber !== this.myPlayerNumber) this.clearTypingIndicator();
     }
 
     escapeHtml(text) {
@@ -976,6 +1024,8 @@ class Connect4Game {
         this.disableChatInput(); // No chat in CPU mode
         document.getElementById('room-info').textContent = 'Single Player vs Easy CPU';
         this.hideInviteActions();
+    const rematchBtn = document.getElementById('rematch-btn');
+    if (rematchBtn) rematchBtn.classList.add('hidden');
     }
 
     /* Invite Feature Helpers */
@@ -1045,6 +1095,44 @@ class Connect4Game {
                 subtitle.textContent = host ? `Joining ${host}'s game` : 'Enter your name to join';
             }
         }
+    }
+
+    /* Typing indicator helpers */
+    handleTyping() {
+        if (!this.socket || !this.gameId || this.gameMode !== 'online') return;
+        if (!this.iAmTyping) {
+            this.iAmTyping = true;
+            this.sendTyping(true);
+        }
+        clearTimeout(this.typingTimeout);
+        this.typingTimeout = setTimeout(() => {
+            this.iAmTyping = false;
+            this.sendTyping(false);
+        }, 1500);
+    }
+
+    sendTyping(isTyping) {
+        if (!this.socket || !this.gameId || this.gameMode !== 'online') return;
+        this.socket.emit('typing', { gameId: this.gameId, isTyping });
+    }
+
+    updateTypingIndicator({ isTyping, playerName }) {
+        const el = document.getElementById('typing-indicator');
+        if (!el) return;
+        if (isTyping) {
+            el.classList.remove('hidden');
+            const safe = this.escapeHtml(playerName || 'Opponent');
+            el.innerHTML = `${safe} is typing <span>.</span><span>.</span><span>.</span>`;
+        } else {
+            this.clearTypingIndicator();
+        }
+    }
+
+    clearTypingIndicator() {
+        const el = document.getElementById('typing-indicator');
+        if (!el) return;
+        el.classList.add('hidden');
+        el.textContent = '';
     }
 
     cpuMove() {
