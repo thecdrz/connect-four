@@ -559,6 +559,12 @@ io.on('connection', (socket) => {
         socket.emit('moveConfirmed', {
             nextPlayer: game.currentPlayer // Send the current player after switch
         });
+        
+        // Broadcast turn update to everyone (including sender for consistency)
+        game.broadcast('turnUpdate', {
+            currentPlayer: game.currentPlayer,
+            playerColor: game.currentPlayer === 1 ? 'red' : 'black'
+        });
     });
 
     // Handle chat messages

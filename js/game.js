@@ -228,6 +228,15 @@ class Connect4Game {
             document.getElementById('status').textContent = `${playerColor}'s turn`;
         });
 
+        this.socket.on('turnUpdate', (data) => {
+            // Update turn state from server authority
+            console.log('🌐 Turn update from server:', data.currentPlayer, data.playerColor);
+            this.currentPlayer = data.currentPlayer;
+            this.isMyTurn = this.currentPlayer === this.myPlayerNumber;
+            document.getElementById('status').textContent = `${data.playerColor}'s turn`;
+            console.log(`🌐 Updated: currentPlayer=${this.currentPlayer}, myPlayerNumber=${this.myPlayerNumber}, isMyTurn=${this.isMyTurn}`);
+        });
+
         this.socket.on('gameWon', (data) => {
             this.gameActive = false;
             this.highlightWinningCells(data.winningCells);
@@ -988,12 +997,10 @@ class Connect4Game {
                 console.log(`🌐 Piece promoted to King!`);
             }
             
-            // Switch turns
-            this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-            this.isMyTurn = this.currentPlayer === this.myPlayerNumber;
-            const playerColor = this.currentPlayer === 1 ? 'red' : 'black';
-            document.getElementById('status').textContent = `${playerColor}'s turn`;
-            console.log(`🌐 Turn switched to player ${this.currentPlayer} (${playerColor})`);
+            // For online games, don't switch turns locally - server manages turns
+            // Turn switching is handled by moveConfirmed for the move maker
+            // and by server state synchronization for the receiver
+            console.log(`🌐 Move applied from player ${player}`);
         }
     }
 
