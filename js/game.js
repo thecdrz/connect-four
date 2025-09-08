@@ -866,7 +866,8 @@ class Connect4Game {
         // Clear any existing highlights
         this.clearPossibleMoves();
         
-        const piece = document.querySelector(`[data-row="${row}"][data-col="${col}"] .checkers-piece`);
+        // Target checkers board specifically to avoid conflicts
+        const piece = document.querySelector(`#checkers-board [data-row="${row}"][data-col="${col}"] .checkers-piece`);
         if (!piece) return;
         
         const isKing = piece.dataset.king === 'true';
@@ -875,14 +876,14 @@ class Connect4Game {
         // Check all possible diagonal moves
         const directions = isKing ? 
             [[-1, -1], [-1, 1], [1, -1], [1, 1]] : // Kings can move in all directions
-            color === 'red' ? [[1, -1], [1, 1]] : [[-1, -1], [-1, 1]]; // Regular pieces move forward only
+            color === 'red' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]; // Red moves up (negative), black moves down (positive)
         
         directions.forEach(([dRow, dCol]) => {
             // Check 1-square moves
             const newRow = row + dRow;
             const newCol = col + dCol;
             if (this.isValidPosition(newRow, newCol) && this.isValidCheckersMove(row, col, newRow, newCol)) {
-                const targetSquare = document.querySelector(`[data-row="${newRow}"][data-col="${newCol}"]`);
+                const targetSquare = document.querySelector(`#checkers-board [data-row="${newRow}"][data-col="${newCol}"]`);
                 if (targetSquare) targetSquare.classList.add('possible-move');
             }
             
@@ -890,7 +891,7 @@ class Connect4Game {
             const jumpRow = row + (dRow * 2);
             const jumpCol = col + (dCol * 2);
             if (this.isValidPosition(jumpRow, jumpCol) && this.isValidCheckersMove(row, col, jumpRow, jumpCol)) {
-                const targetSquare = document.querySelector(`[data-row="${jumpRow}"][data-col="${jumpCol}"]`);
+                const targetSquare = document.querySelector(`#checkers-board [data-row="${jumpRow}"][data-col="${jumpCol}"]`);
                 if (targetSquare) targetSquare.classList.add('possible-move capture-move');
             }
         });
@@ -1011,8 +1012,12 @@ class Connect4Game {
         if (Math.abs(rowDiff) === 2 && Math.abs(colDiff) === 2) {
             const midRow = fromRow + rowDiff / 2;
             const midCol = fromCol + colDiff / 2;
-            const midSquare = document.querySelector(`[data-row="${midRow}"][data-col="${midCol}"]`);
-            return midSquare.querySelector('.checkers-piece');
+            // Target checkers board specifically to avoid conflicts with Connect 4 board
+            const midSquare = document.querySelector(`#checkers-board [data-row="${midRow}"][data-col="${midCol}"]`);
+            console.log(`🎯 Checking capture: midSquare at (${midRow},${midCol}):`, midSquare);
+            const capturedPiece = midSquare?.querySelector('.checkers-piece');
+            console.log(`🎯 Captured piece found:`, capturedPiece);
+            return capturedPiece;
         }
         
         return null;
