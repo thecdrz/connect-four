@@ -420,6 +420,11 @@ main {
     background-color: #f1c40f; /* fallback yellow */
 }
 
+.player-indicator.cpu-hellraiser {
+    background-image: url('../assets/Hellraiser-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
 .player.active .player-indicator {
     box-shadow: 0 0 15px rgba(52, 152, 219, 0.8);
     border-color: #3498db;

@@ -1817,7 +1817,8 @@ class Connect4Game {
             { name: 'Creature', cssClass: 'cpu-creature' },
             { name: 'Chainsaw', cssClass: 'cpu-chainsaw' },
             { name: 'The Mummy', cssClass: 'cpu-mummy' },
-            { name: 'The Nun', cssClass: 'cpu-nun' }
+            { name: 'The Nun', cssClass: 'cpu-nun' },
+            { name: 'Hellraiser', cssClass: 'cpu-hellraiser' }
         ];
         this.currentCpuCharacter = cpuCharacters[Math.floor(Math.random() * cpuCharacters.length)];
         

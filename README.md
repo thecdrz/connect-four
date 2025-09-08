@@ -1,4 +1,4 @@
-# Grace's Games - Multiplayer Ga- 🎪 **Horror CPU Collection:** 10 iconic horror characters as CPU opponents - Freddy, Michael, Jason, Frankenstein, Dracula, The Exorcist, Creature, Chainsaw, The Mummy, and The Nun.e Platform
+# Grace's Games - Multiplayer Ga- 🎪 **Horror CPU Collection:** 11 iconic horror characters as CPU opponents - Freddy, Michael, Jason, Frankenstein, Dracula, The Exorcist, Creature, Chainsaw, The Mummy, The Nun, and Hellraiser.e Platform
 
 A real-time, browser-based multiplayer gaming platform featuring **Connect 4** and **Checkers** built with Node.js and Socket.IO. This project features clean user interfaces, real-time chat (with typing indicator), character avatars, invite links, rematches, and a persistent leaderboard.
 
