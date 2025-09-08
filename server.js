@@ -230,6 +230,11 @@ class Connect4Game {
         return true;
     }
 
+    switchTurn() {
+        this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+        console.log(`Turn switched to player ${this.currentPlayer}`);
+    }
+
     getBottomEmptyRow(col) {
         for (let row = 5; row >= 0; row--) {
             if (this.board[row][col] === 0) {
@@ -346,6 +351,16 @@ class Connect4Game {
     this.players.forEach(player => player.socket.emit(event, data));
     // Also broadcast to spectators
     this.spectators.forEach(sock => sock.emit(event, data));
+    }
+
+    broadcastToOthers(excludeSocket, event, data = {}) {
+        this.players.forEach(player => {
+            if (player.socket !== excludeSocket) {
+                player.socket.emit(event, data);
+            }
+        });
+        // Also broadcast to spectators
+        this.spectators.forEach(sock => sock.emit(event, data));
     }
 
     resetForRematch() {
@@ -510,6 +525,40 @@ io.on('connection', (socket) => {
         if (!success) {
             socket.emit('error', { message: 'Invalid move' });
         }
+    });
+
+    // Handle checkers moves
+    socket.on('checkersMove', ({ gameId, from, to, piece, captured, king }) => {
+        const game = games.get(gameId);
+        
+        if (!game) {
+            socket.emit('error', { message: 'Game not found' });
+            return;
+        }
+        
+        // Verify it's the player's turn
+        if (socket.playerNumber !== game.currentPlayer) {
+            socket.emit('error', { message: 'Not your turn' });
+            return;
+        }
+        
+        // Broadcast the move to OTHER players in the game (not the sender)
+        game.broadcastToOthers(socket, 'checkersMoveMade', {
+            from: from,
+            to: to,
+            piece: piece,
+            captured: captured,
+            king: king,
+            player: socket.playerNumber
+        });
+        
+        // Switch turns first
+        game.switchTurn();
+        
+        // Send confirmation back to the sender with turn info
+        socket.emit('moveConfirmed', {
+            nextPlayer: game.currentPlayer // Send the current player after switch
+        });
     });
 
     // Handle chat messages

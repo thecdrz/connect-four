@@ -62,6 +62,9 @@ class Connect4Game {
             click: this.createBeepSound(600, 0.05), // Button click
             connect: this.createBeepSound(500, 0.1), // Connection sound
             chat: this.createBeepSound(300, 0.05), // Chat message
+            checkersMove: this.createBeepSound(450, 0.08), // Checkers piece move
+            checkersCapture: this.createBeepSound(650, 0.15), // Checkers capture
+            checkersSelect: this.createBeepSound(350, 0.04), // Checkers piece selection
         };
     }
 
@@ -208,6 +211,21 @@ class Connect4Game {
 
         this.socket.on('moveMade', (data) => {
             this.makeMove(data.col, data.player, true);
+        });
+
+        this.socket.on('checkersMoveMade', (data) => {
+            // Apply the move from another player
+            console.log('🌐 Received checkers move from other player:', data);
+            this.applyCheckersMove(data.from, data.to, data.piece, data.captured, data.king, data.player);
+        });
+
+        this.socket.on('moveConfirmed', (data) => {
+            // Update turn after our move was confirmed by server
+            console.log('🌐 Move confirmed by server, new current player:', data.nextPlayer);
+            this.currentPlayer = data.nextPlayer;
+            this.isMyTurn = this.currentPlayer === this.myPlayerNumber;
+            const playerColor = this.currentPlayer === 1 ? 'red' : 'black';
+            document.getElementById('status').textContent = `${playerColor}'s turn`;
         });
 
         this.socket.on('gameWon', (data) => {
@@ -374,11 +392,14 @@ class Connect4Game {
         // Main game button listeners (outside modal) - directly go to name step
         document.getElementById('new-game-btn').addEventListener('click', () => {
             this.sounds.click.play();
-            if (this.gameMode === 'cpu') {
-                // In CPU mode, this button becomes "New CPU Game"
+            // Check the current button text to determine what action to take
+            const buttonText = document.getElementById('new-game-btn').textContent;
+            
+            if (buttonText.includes('New CPU Game')) {
+                // In CPU mode, start a new CPU game with current difficulty
                 this.showCPUDifficultyModal();
             } else {
-                // Normal mode: show name modal for online game
+                // Default: start an online game
                 this.showNameModal();
                 this.showNameStep('create');
             }
@@ -564,8 +585,12 @@ class Connect4Game {
     }
 
     createCheckersBoard() {
+        console.log('🔨 Creating checkers board...');
         const boardElement = document.getElementById('checkers-board');
+        console.log('📋 Board element:', boardElement);
+        console.log('📋 Board current innerHTML length:', boardElement.innerHTML.length);
         boardElement.innerHTML = '';
+        console.log('🧹 Board cleared, creating squares...');
         
         // Initialize checkers board - only dark squares are playable
         // Standard checkers setup: 8x8 board, pieces on dark squares of first 3 and last 3 rows
@@ -581,27 +606,45 @@ class Connect4Game {
                 // Place initial pieces on dark squares
                 if (isDark) {
                     if (row < 3) {
-                        // Red pieces (top)
-                        const piece = document.createElement('div');
-                        piece.className = 'checkers-piece red';
-                        piece.dataset.color = 'red';
-                        piece.dataset.king = 'false';
-                        square.appendChild(piece);
-                    } else if (row > 4) {
-                        // Black pieces (bottom)
+                        // Black pieces (top) - CPU pieces
+                        console.log(`🔴 Creating BLACK piece at (${row},${col})`);
                         const piece = document.createElement('div');
                         piece.className = 'checkers-piece black';
                         piece.dataset.color = 'black';
                         piece.dataset.king = 'false';
                         square.appendChild(piece);
+                        console.log(`✅ BLACK piece added to square:`, square.innerHTML);
+                    } else if (row > 4) {
+                        // Red pieces (bottom) - Player pieces
+                        console.log(`🔴 Creating RED piece at (${row},${col})`);
+                        const piece = document.createElement('div');
+                        piece.className = 'checkers-piece red';
+                        piece.dataset.color = 'red';
+                        piece.dataset.king = 'false';
+                        square.appendChild(piece);
+                        console.log(`✅ RED piece added to square:`, square.innerHTML);
                     }
-                    
-                    square.addEventListener('click', () => this.handleCheckersMove(row, col));
                 }
+                
+                // Add click listeners to ALL squares (not just dark ones)
+                square.addEventListener('click', () => this.handleCheckersMove(row, col));
                 
                 boardElement.appendChild(square);
             }
         }
+        
+        // Test: check if pieces were actually added
+        setTimeout(() => {
+            console.log('🔍 TESTING: Board content after creation:');
+            const redPieces = document.querySelectorAll('#checkers-board .checkers-piece.red');
+            const blackPieces = document.querySelectorAll('#checkers-board .checkers-piece.black');
+            console.log(`🔴 Found ${redPieces.length} red pieces`);
+            console.log(`⚫ Found ${blackPieces.length} black pieces`);
+            if (redPieces.length > 0) {
+                console.log('✅ First red piece:', redPieces[0]);
+                console.log('✅ First red piece parent:', redPieces[0].parentElement);
+            }
+        }, 100);
     }
 
     switchGameType(gameType) {
@@ -627,6 +670,34 @@ class Connect4Game {
             document.getElementById('checkers-board').classList.remove('hidden');
         }
         
+        // Update logo based on game type
+        const gameLogo = document.getElementById('game-logo');
+        const fallbackTitle = document.querySelector('.fallback-title');
+        const gameInstructions = document.getElementById('game-instructions');
+        
+        if (gameType === 'connect4') {
+            gameLogo.src = 'assets/Logo3.png';
+            gameLogo.alt = 'Connect 4 Logo';
+            fallbackTitle.textContent = 'Connect 4';
+            gameInstructions.innerHTML = `
+                <li>Click on a column to drop your piece</li>
+                <li>Connect 4 pieces in a row to win</li>
+                <li>Win horizontally, vertically, or diagonally</li>
+                <li>Take turns with your opponent</li>
+            `;
+        } else {
+            gameLogo.src = 'assets/Logo_Grace.png';
+            gameLogo.alt = 'Checkers Logo';
+            fallbackTitle.textContent = 'Checkers';
+            gameInstructions.innerHTML = `
+                <li><strong>Click a piece to select it</strong> (gets gold highlight)</li>
+                <li><strong>Click an empty diagonal square to move</strong></li>
+                <li>Jump over opponent pieces to capture them</li>
+                <li>Reach the opposite end to become a King ♔</li>
+                <li>Kings can move in any diagonal direction</li>
+            `;
+        }
+        
         // Update status message
         if (gameType === 'connect4') {
             this.updateStatus('🔴 Connect 4 selected! Choose a game mode to start.');
@@ -636,26 +707,74 @@ class Connect4Game {
     }
 
     handleCheckersMove(row, col) {
-        if (this.gameType !== 'checkers') return;
+        console.log(`🎯 handleCheckersMove called: row=${row}, col=${col}`);
+        console.log(`🎮 Current game type: ${this.gameType}`);
+        console.log(`👤 Current player: ${this.currentPlayer}`);
+        console.log(`🎯 Selected piece:`, this.selectedPiece);
         
-        // Basic checkers move handler
-        const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+        if (this.gameType !== 'checkers') {
+            console.log('❌ Not in checkers mode, exiting');
+            return;
+        }
+        
+        // Basic checkers move handler - target ONLY checkers board squares
+        const square = document.querySelector(`#checkers-board [data-row="${row}"][data-col="${col}"]`);
+        console.log('🔲 Selected square:', square);
         
         // If no piece is selected, select the piece
         if (!this.selectedPiece) {
+            console.log('🔍 No piece selected, trying to select one...');
+            console.log('🔲 Square innerHTML:', square.innerHTML);
+            console.log('🔲 Square children:', square.children);
             const piece = square.querySelector('.checkers-piece');
-            if (piece && piece.dataset.color === this.currentPlayer) {
+            console.log('🔴 Found piece:', piece);
+            
+            let canSelect = false;
+            if (piece) {
+                console.log(`🎨 Piece color: ${piece.dataset.color}, Current player: ${this.currentPlayer}`);
+                console.log(`🎮 Game mode: ${this.gameMode}, My player number: ${this.myPlayerNumber}, Is my turn: ${this.isMyTurn}`);
+                
+                // Determine if this piece can be selected based on game mode
+                if (this.gameMode === 'online') {
+                    // For online games: player 1 = red, player 2 = black, only move on your turn
+                    const myColor = this.myPlayerNumber === 1 ? 'red' : 'black';
+                    canSelect = piece.dataset.color === myColor && this.isMyTurn;
+                    console.log(`🌐 Online game: My color: ${myColor}, My turn: ${this.isMyTurn}, Can select: ${canSelect}`);
+                } else {
+                    // For local/CPU games: HUMAN player can ONLY move RED pieces, never black
+                    canSelect = piece.dataset.color === 'red' && this.currentPlayer === 'red';
+                    console.log(`🏠 Local/CPU game: Piece is ${piece.dataset.color}, Current player: ${this.currentPlayer}, Can select: ${canSelect}`);
+                }
+                
+                console.log(`✅ Can select: ${canSelect}`);
+            }
+            
+            if (piece && canSelect) {
                 this.selectedPiece = { row, col, piece };
                 square.classList.add('selected');
-                console.log(`Selected piece at ${row}, ${col}`);
+                this.highlightPossibleMoves(row, col);
+                this.sounds.checkersSelect.play(); // Play selection sound
+                console.log(`✅ Selected ${piece.dataset.color} piece at ${row}, ${col}`);
+            } else {
+                console.log(`❌ Cannot select piece - either no piece found or wrong color/turn`);
+                if (!piece) console.log('❌ No piece in this square');
+                if (piece && !canSelect) {
+                    if (this.gameMode === 'online') {
+                        console.log(`❌ Online game: piece is ${piece.dataset.color}, you are ${this.myPlayerNumber === 1 ? 'red' : 'black'}, your turn: ${this.isMyTurn}`);
+                    } else {
+                        console.log(`❌ Local game: piece is ${piece.dataset.color}, current player is ${this.currentPlayer}`);
+                    }
+                }
             }
         } else {
             // If a piece is selected, try to move it
             const fromRow = this.selectedPiece.row;
             const fromCol = this.selectedPiece.col;
             
-            // Clear previous selection
-            document.querySelector(`[data-row="${fromRow}"][data-col="${fromCol}"]`).classList.remove('selected');
+            // Clear previous selection and highlights - TARGET CHECKERS BOARD SPECIFICALLY
+            const fromSquare = document.querySelector(`#checkers-board [data-row="${fromRow}"][data-col="${fromCol}"]`);
+            fromSquare.classList.remove('selected');
+            this.clearPossibleMoves();
             
             if (this.isValidCheckersMove(fromRow, fromCol, row, col)) {
                 // Move the piece
@@ -666,6 +785,10 @@ class Connect4Game {
                 const capturedPiece = this.checkCapture(fromRow, fromCol, row, col);
                 if (capturedPiece) {
                     capturedPiece.remove();
+                    this.sounds.checkersCapture.play(); // Play capture sound
+                    console.log(`Captured ${capturedPiece.dataset.color} piece!`);
+                } else {
+                    this.sounds.checkersMove.play(); // Play regular move sound
                 }
                 
                 // Check for king promotion
@@ -673,40 +796,146 @@ class Connect4Game {
                     (piece.dataset.color === 'red' && row === 7)) {
                     piece.dataset.king = 'true';
                     piece.classList.add('king');
+                    console.log(`${piece.dataset.color} piece promoted to King!`);
                 }
                 
-                // Switch players if no more captures available
-                this.currentPlayer = this.currentPlayer === 'red' ? 'black' : 'red';
-                document.getElementById('status').textContent = `${this.currentPlayer}'s turn`;
+                // Check for additional captures (double jump)
+                let hasMoreCaptures = false;
+                if (capturedPiece) {
+                    const additionalCaptures = this.getCheckersMovesForPiece(row, col).filter(move => move.isCapture);
+                    if (additionalCaptures.length > 0) {
+                        hasMoreCaptures = true;
+                        console.log(`🎯 ${piece.dataset.color} piece can capture again! Highlighting additional moves.`);
+                        this.selectedPiece = { row, col, piece };
+                        square.classList.add('selected');
+                        this.highlightPossibleMoves(row, col);
+                        this.sounds.checkersSelect.play(); // Play selection sound for double jump
+                        // Don't switch players yet - same player continues
+                        return;
+                    }
+                }
+                
+                // For online games, send move to server
+                if (this.gameMode === 'online' && this.socket) {
+                    this.socket.emit('checkersMove', {
+                        gameId: this.gameId, 
+                        from: { row: fromRow, col: fromCol },
+                        to: { row: row, col: col },
+                        piece: piece.dataset.color,
+                        captured: capturedPiece ? true : false,
+                        king: piece.dataset.king === 'true'
+                    });
+                }
+                
+                // Switch players - handle both online (numeric) and local (string) player systems
+                if (this.gameMode === 'online') {
+                    // For online games, immediately disable further moves until server confirms
+                    this.isMyTurn = false;
+                    document.getElementById('status').textContent = "Waiting for opponent...";
+                    console.log('🌐 Move sent to server, turn disabled until server response...');
+                } else {
+                    // For local/CPU games, use string system (red, black)
+                    this.currentPlayer = this.currentPlayer === 'red' ? 'black' : 'red';
+                    document.getElementById('status').textContent = `${this.currentPlayer}'s turn`;
+                    
+                    // Trigger CPU move if it's now black's turn (CPU turn)
+                    if (this.currentPlayer === 'black' && this.gameMode === 'cpu') {
+                        console.log('🤖 Triggering CPU checkers move...');
+                        setTimeout(() => this.cpuCheckersMove(), 1000); // Delay for better UX
+                    }
+                }
+                console.log(`Turn switched to ${this.currentPlayer}`);
+            } else {
+                console.log('Invalid move attempted');
             }
             
             this.selectedPiece = null;
         }
     }
 
+    highlightPossibleMoves(row, col) {
+        // Clear any existing highlights
+        this.clearPossibleMoves();
+        
+        const piece = document.querySelector(`[data-row="${row}"][data-col="${col}"] .checkers-piece`);
+        if (!piece) return;
+        
+        const isKing = piece.dataset.king === 'true';
+        const color = piece.dataset.color;
+        
+        // Check all possible diagonal moves
+        const directions = isKing ? 
+            [[-1, -1], [-1, 1], [1, -1], [1, 1]] : // Kings can move in all directions
+            color === 'red' ? [[1, -1], [1, 1]] : [[-1, -1], [-1, 1]]; // Regular pieces move forward only
+        
+        directions.forEach(([dRow, dCol]) => {
+            // Check 1-square moves
+            const newRow = row + dRow;
+            const newCol = col + dCol;
+            if (this.isValidPosition(newRow, newCol) && this.isValidCheckersMove(row, col, newRow, newCol)) {
+                const targetSquare = document.querySelector(`[data-row="${newRow}"][data-col="${newCol}"]`);
+                if (targetSquare) targetSquare.classList.add('possible-move');
+            }
+            
+            // Check 2-square moves (captures)
+            const jumpRow = row + (dRow * 2);
+            const jumpCol = col + (dCol * 2);
+            if (this.isValidPosition(jumpRow, jumpCol) && this.isValidCheckersMove(row, col, jumpRow, jumpCol)) {
+                const targetSquare = document.querySelector(`[data-row="${jumpRow}"][data-col="${jumpCol}"]`);
+                if (targetSquare) targetSquare.classList.add('possible-move capture-move');
+            }
+        });
+    }
+
+    clearPossibleMoves() {
+        document.querySelectorAll('.checkers-square').forEach(square => {
+            square.classList.remove('possible-move', 'capture-move');
+        });
+    }
+
+    isValidPosition(row, col) {
+        return row >= 0 && row < 8 && col >= 0 && col < 8;
+    }
+
     isValidCheckersMove(fromRow, fromCol, toRow, toCol) {
+        console.log(`🔍 Validating move from (${fromRow},${fromCol}) to (${toRow},${toCol})`);
+        
         // Basic move validation for checkers
         const piece = this.selectedPiece.piece;
         const isKing = piece.dataset.king === 'true';
         const color = piece.dataset.color;
         
-        // Check if destination is empty and on a dark square
-        const toSquare = document.querySelector(`[data-row="${toRow}"][data-col="${toCol}"]`);
-        if (!toSquare.classList.contains('dark') || toSquare.querySelector('.checkers-piece')) {
+        console.log(`🔴 Piece color: ${color}, isKing: ${isKing}`);
+        
+        // Check if destination is empty and on a dark square - TARGET CHECKERS BOARD SPECIFICALLY
+        const toSquare = document.querySelector(`#checkers-board [data-row="${toRow}"][data-col="${toCol}"]`);
+        console.log(`🎯 Destination square:`, toSquare);
+        console.log(`🎯 Is dark square:`, toSquare?.classList.contains('dark'));
+        console.log(`🎯 Has piece:`, !!toSquare?.querySelector('.checkers-piece'));
+        
+        if (!toSquare || !toSquare.classList.contains('dark') || toSquare.querySelector('.checkers-piece')) {
+            console.log('❌ Invalid destination: not dark or occupied');
             return false;
         }
         
         const rowDiff = toRow - fromRow;
         const colDiff = Math.abs(toCol - fromCol);
         
+        console.log(`📏 Row difference: ${rowDiff}, Column difference: ${colDiff}`);
+        
         // Regular pieces can only move diagonally forward
         if (!isKing) {
-            const correctDirection = (color === 'red' && rowDiff > 0) || (color === 'black' && rowDiff < 0);
-            if (!correctDirection) return false;
+            const correctDirection = (color === 'red' && rowDiff < 0) || (color === 'black' && rowDiff > 0);
+            console.log(`🧭 Correct direction for ${color}: ${correctDirection} (rowDiff: ${rowDiff})`);
+            if (!correctDirection) {
+                console.log('❌ Wrong direction for non-king piece');
+                return false;
+            }
         }
         
         // Check for simple move (1 square diagonally)
         if (Math.abs(rowDiff) === 1 && colDiff === 1) {
+            console.log('✅ Valid simple diagonal move');
             return true;
         }
         
@@ -714,7 +943,7 @@ class Connect4Game {
         if (Math.abs(rowDiff) === 2 && colDiff === 2) {
             const midRow = fromRow + rowDiff / 2;
             const midCol = fromCol + (toCol - fromCol) / 2;
-            const midSquare = document.querySelector(`[data-row="${midRow}"][data-col="${midCol}"]`);
+            const midSquare = document.querySelector(`#checkers-board [data-row="${midRow}"][data-col="${midCol}"]`);
             const midPiece = midSquare.querySelector('.checkers-piece');
             
             // There must be an opponent piece to capture
@@ -722,6 +951,50 @@ class Connect4Game {
         }
         
         return false;
+    }
+
+    applyCheckersMove(from, to, pieceColor, captured, isKing, player) {
+        // Apply a checkers move received from another player
+        console.log(`🌐 Applying move from player ${player}: ${pieceColor} piece (${from.row},${from.col}) to (${to.row},${to.col})`);
+        
+        // Find the piece to move
+        const fromSquare = document.querySelector(`#checkers-board [data-row="${from.row}"][data-col="${from.col}"]`);
+        const toSquare = document.querySelector(`#checkers-board [data-row="${to.row}"][data-col="${to.col}"]`);
+        const piece = fromSquare.querySelector('.checkers-piece');
+        
+        if (piece && toSquare) {
+            // Move the piece
+            toSquare.appendChild(piece);
+            
+            // Handle capture
+            if (captured) {
+                const midRow = from.row + (to.row - from.row) / 2;
+                const midCol = from.col + (to.col - from.col) / 2;
+                const midSquare = document.querySelector(`#checkers-board [data-row="${midRow}"][data-col="${midCol}"]`);
+                const capturedPiece = midSquare?.querySelector('.checkers-piece');
+                if (capturedPiece) {
+                    capturedPiece.remove();
+                    this.sounds.checkersCapture.play(); // Play capture sound for online move
+                    console.log(`🌐 Captured piece removed at (${midRow},${midCol})`);
+                }
+            } else {
+                this.sounds.checkersMove.play(); // Play regular move sound for online move
+            }
+            
+            // Handle king promotion
+            if (isKing && piece.dataset.king !== 'true') {
+                piece.dataset.king = 'true';
+                piece.classList.add('king');
+                console.log(`🌐 Piece promoted to King!`);
+            }
+            
+            // Switch turns
+            this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+            this.isMyTurn = this.currentPlayer === this.myPlayerNumber;
+            const playerColor = this.currentPlayer === 1 ? 'red' : 'black';
+            document.getElementById('status').textContent = `${playerColor}'s turn`;
+            console.log(`🌐 Turn switched to player ${this.currentPlayer} (${playerColor})`);
+        }
     }
 
     checkCapture(fromRow, fromCol, toRow, toCol) {
@@ -1528,24 +1801,25 @@ class Connect4Game {
         ];
         this.currentCpuCharacter = cpuCharacters[Math.floor(Math.random() * cpuCharacters.length)];
         
-        this.resetBoard();
-        
-        // Initialize the appropriate game board based on game type
-        if (this.gameType === 'checkers') {
-            this.createCheckersBoard();
-            this.currentPlayer = 'red'; // Checkers uses 'red'/'black' instead of 1/2
-            this.updateStatus(`🔴⚫ Playing Checkers vs ${cpuDisplayName} • Red's turn!`);
-        } else {
-            this.updateStatus(`🤖 Playing vs ${cpuDisplayName} • Your turn!`);
-        }
-        
-        document.getElementById('player1-name').textContent = 'You';
+        // Define CPU display name first
         const difficultyLabels = {
             'easy': 'Easy',
             'medium': 'Medium', 
             'hard': 'Hard'
         };
         const cpuDisplayName = `${this.currentCpuCharacter.name} (${difficultyLabels[difficulty]} CPU)`;
+        
+        this.resetBoard();
+        
+        // Initialize the appropriate game board based on game type
+        if (this.gameType === 'checkers') {
+            // No need to call createCheckersBoard again since resetBoard() already does it
+            this.updateStatus(`🔴⚫ Playing Checkers vs ${cpuDisplayName} • Red's turn!`);
+        } else {
+            this.updateStatus(`🤖 Playing vs ${cpuDisplayName} • Your turn!`);
+        }
+        
+        document.getElementById('player1-name').textContent = 'You';
         document.getElementById('player2-name').textContent = cpuDisplayName;
         
         // Update player 2 avatar to use the selected CPU character
@@ -1943,6 +2217,125 @@ class Connect4Game {
             this.updateStatus(this.isMyTurn ? 'Your turn!' : "Opponent's turn");
             return;
         }
+    }
+
+    // CPU AI for checkers
+    cpuCheckersMove() {
+        if (!this.gameActive || this.currentPlayer !== 'black' || this.gameType !== 'checkers') return;
+        
+        console.log('🤖 CPU making checkers move...');
+        
+        // Get all black pieces and their possible moves
+        const blackPieces = [];
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const square = document.querySelector(`#checkers-board [data-row="${row}"][data-col="${col}"]`);
+                const piece = square?.querySelector('.checkers-piece.black');
+                if (piece) {
+                    blackPieces.push({ row, col, piece, square });
+                }
+            }
+        }
+        
+        // Find all possible moves for all black pieces
+        const possibleMoves = [];
+        for (const pieceInfo of blackPieces) {
+            const moves = this.getCheckersMovesForPiece(pieceInfo.row, pieceInfo.col);
+            for (const move of moves) {
+                possibleMoves.push({
+                    from: { row: pieceInfo.row, col: pieceInfo.col },
+                    to: { row: move.row, col: move.col },
+                    piece: pieceInfo.piece,
+                    fromSquare: pieceInfo.square,
+                    isCapture: move.isCapture
+                });
+            }
+        }
+        
+        if (possibleMoves.length === 0) {
+            console.log('🤖 No moves available for CPU');
+            return;
+        }
+        
+        // Simple AI: Prefer captures, otherwise random move
+        let chosenMove = possibleMoves.find(move => move.isCapture) || 
+                        possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        
+        console.log(`🤖 CPU chose move from (${chosenMove.from.row},${chosenMove.from.col}) to (${chosenMove.to.row},${chosenMove.to.col})`);
+        
+        // Execute the move
+        const toSquare = document.querySelector(`#checkers-board [data-row="${chosenMove.to.row}"][data-col="${chosenMove.to.col}"]`);
+        toSquare.appendChild(chosenMove.piece);
+        
+        // Handle capture
+        if (chosenMove.isCapture) {
+            const midRow = chosenMove.from.row + (chosenMove.to.row - chosenMove.from.row) / 2;
+            const midCol = chosenMove.from.col + (chosenMove.to.col - chosenMove.from.col) / 2;
+            const midSquare = document.querySelector(`#checkers-board [data-row="${midRow}"][data-col="${midCol}"]`);
+            const capturedPiece = midSquare?.querySelector('.checkers-piece');
+            if (capturedPiece) {
+                capturedPiece.remove();
+                this.sounds.checkersCapture.play(); // Play capture sound for CPU move
+                console.log('🤖 CPU captured a piece!');
+            }
+        } else {
+            this.sounds.checkersMove.play(); // Play regular move sound for CPU move
+        }
+        
+        // Check for king promotion
+        if (chosenMove.to.row === 7) {
+            chosenMove.piece.dataset.king = 'true';
+            chosenMove.piece.classList.add('king');
+            console.log('🤖 CPU piece promoted to King!');
+        }
+        
+        // Switch back to human player
+        this.currentPlayer = 'red';
+        document.getElementById('status').textContent = "red's turn";
+        console.log('🤖 CPU move complete, switched to red');
+    }
+
+    // Get possible moves for a specific piece at given position
+    getCheckersMovesForPiece(row, col) {
+        const moves = [];
+        const piece = document.querySelector(`#checkers-board [data-row="${row}"][data-col="${col}"] .checkers-piece`);
+        if (!piece) return moves;
+        
+        const isKing = piece.dataset.king === 'true';
+        const color = piece.dataset.color;
+        
+        // Define possible move directions
+        const directions = [];
+        if (color === 'black' || isKing) directions.push([1, 1], [1, -1]); // Forward for black
+        if (color === 'red' || isKing) directions.push([-1, 1], [-1, -1]); // Forward for red
+        
+        for (const [dRow, dCol] of directions) {
+            // Check simple move (1 square)
+            const newRow = row + dRow;
+            const newCol = col + dCol;
+            if (this.isValidPosition(newRow, newCol)) {
+                const targetSquare = document.querySelector(`#checkers-board [data-row="${newRow}"][data-col="${newCol}"]`);
+                if (targetSquare?.classList.contains('dark') && !targetSquare.querySelector('.checkers-piece')) {
+                    moves.push({ row: newRow, col: newCol, isCapture: false });
+                }
+            }
+            
+            // Check capture move (2 squares)
+            const jumpRow = row + dRow * 2;
+            const jumpCol = col + dCol * 2;
+            if (this.isValidPosition(jumpRow, jumpCol)) {
+                const midSquare = document.querySelector(`#checkers-board [data-row="${newRow}"][data-col="${newCol}"]`);
+                const targetSquare = document.querySelector(`#checkers-board [data-row="${jumpRow}"][data-col="${jumpCol}"]`);
+                const midPiece = midSquare?.querySelector('.checkers-piece');
+                
+                if (midPiece && midPiece.dataset.color !== color && 
+                    targetSquare?.classList.contains('dark') && !targetSquare.querySelector('.checkers-piece')) {
+                    moves.push({ row: jumpRow, col: jumpCol, isCapture: true });
+                }
+            }
+        }
+        
+        return moves;
     }
 
     /* Layout helper: keep chat bottom from extending below board bottom on desktop */
