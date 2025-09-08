@@ -308,6 +308,11 @@ class Connect4Game {
         this.socket.on('leaderboard', (data) => {
             this.showLeaderboard(data);
         });
+        
+        // Handle comprehensive leaderboard data
+        this.socket.on('comprehensiveLeaderboard', (data) => {
+            this.showComprehensiveLeaderboard(data);
+        });
 
         this.socket.on('gameLeft', () => {
             this.hideLeaveConfirmation();
@@ -455,10 +460,10 @@ class Connect4Game {
             });
         });
 
-        // Leaderboard button
+        // Leaderboard button - Request comprehensive data
         document.getElementById('show-leaderboard').addEventListener('click', () => {
             if (this.socket) {
-                this.socket.emit('getLeaderboard');
+                this.socket.emit('getComprehensiveLeaderboard');
             }
         });
 
@@ -518,6 +523,14 @@ class Connect4Game {
 
         document.getElementById('leaderboard-close').addEventListener('click', () => {
             this.hideLeaderboardModal();
+        });
+        
+        // Leaderboard tab functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                this.switchLeaderboardTab(tabName);
+            });
         });
 
         document.getElementById('name-modal-close').addEventListener('click', () => {
@@ -823,6 +836,36 @@ class Connect4Game {
                         return;
                     }
                 }
+
+                // Check for win condition after move
+                const winner = this.checkCheckersWin();
+                if (winner) {
+                    this.gameActive = false;
+                    this.sounds.win.play();
+                    
+                    if (this.gameMode === 'online' && this.socket) {
+                        // Let server handle win detection for online games
+                        // This is just for UI feedback
+                        console.log(`🏆 Checkers game won by ${winner}!`);
+                    } else {
+                        // Handle local/CPU game win
+                        console.log(`🏆 Checkers game won by ${winner}!`);
+                        const isPlayerWin = winner === 'red';
+                        
+                        // Track CPU game result
+                        if (this.gameMode === 'cpu') {
+                            this.trackCPUGameResult(isPlayerWin, 'checkers');
+                        }
+                        
+                        this.showModal(
+                            isPlayerWin ? '🎉 You Won!' : '😔 You Lost!',
+                            isPlayerWin ? 
+                                'Congratulations! You won the checkers game!' : 
+                                `${this.currentCpuCharacter?.name || 'CPU'} won the checkers game. Better luck next time!`
+                        );
+                    }
+                    return;
+                }
                 
                 // For online games, send move to server
                 if (this.gameMode === 'online' && this.socket) {
@@ -999,6 +1042,24 @@ class Connect4Game {
                 console.log(`🌐 Piece promoted to King!`);
             }
             
+            // Check for win condition in online games
+            const winner = this.checkCheckersWin();
+            if (winner) {
+                this.gameActive = false;
+                this.sounds.win.play();
+                console.log(`🏆 Online checkers game won by ${winner}!`);
+                
+                const isPlayerWin = (winner === 'red' && this.myPlayerNumber === 1) || 
+                                  (winner === 'black' && this.myPlayerNumber === 2);
+                
+                this.showModal(
+                    isPlayerWin ? '🎉 You Won!' : '😔 You Lost!',
+                    isPlayerWin ? 
+                        'Congratulations! You won the checkers game!' : 
+                        'Your opponent won the checkers game. Better luck next time!'
+                );
+            }
+            
             // For online games, don't switch turns locally - server manages turns
             // Turn switching is handled by moveConfirmed for the move maker
             // and by server state synchronization for the receiver
@@ -1085,6 +1146,10 @@ class Connect4Game {
                 });
             } else if (this.gameMode === 'cpu') {
                 const isWinner = player === this.myPlayerNumber;
+                
+                // Track CPU game stats
+                this.trackCPUGameResult(isWinner);
+                
                 this.sounds.win.play();
                 this.showModal(
                     isWinner ? '🎉 You Won!' : '😔 You Lost!',
@@ -1172,6 +1237,61 @@ class Connect4Game {
         }
         
         return count >= 4;
+    }
+
+    // Checkers win detection
+    checkCheckersWin() {
+        if (this.gameType !== 'checkers') return null;
+        
+        console.log('🏆 Checking for checkers win condition...');
+        
+        // Count pieces for each player
+        const pieces = { red: [], black: [] };
+        
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const square = document.querySelector(`#checkers-board [data-row="${row}"][data-col="${col}"]`);
+                const piece = square?.querySelector('.checkers-piece');
+                if (piece) {
+                    const color = piece.dataset.color;
+                    pieces[color].push({ row, col, piece });
+                }
+            }
+        }
+        
+        console.log(`🔴 Red pieces: ${pieces.red.length}, ⚫ Black pieces: ${pieces.black.length}`);
+        
+        // Win condition 1: Opponent has no pieces left
+        if (pieces.red.length === 0) {
+            console.log('🏆 Black wins - no red pieces left!');
+            return 'black';
+        }
+        if (pieces.black.length === 0) {
+            console.log('🏆 Red wins - no black pieces left!');
+            return 'red';
+        }
+        
+        // Win condition 2: Current player has no valid moves (blocked)
+        const currentPlayerColor = this.currentPlayer === 1 || this.currentPlayer === 'red' ? 'red' : 'black';
+        const currentPlayerPieces = pieces[currentPlayerColor];
+        
+        let hasValidMoves = false;
+        for (const pieceInfo of currentPlayerPieces) {
+            const moves = this.getCheckersMovesForPiece(pieceInfo.row, pieceInfo.col);
+            if (moves.length > 0) {
+                hasValidMoves = true;
+                break;
+            }
+        }
+        
+        if (!hasValidMoves) {
+            const winner = currentPlayerColor === 'red' ? 'black' : 'red';
+            console.log(`🏆 ${winner} wins - ${currentPlayerColor} has no valid moves!`);
+            return winner;
+        }
+        
+        console.log('🎮 Game continues - no win condition met');
+        return null;
     }
 
     getWinningCells(row, col, player) {
@@ -1524,33 +1644,230 @@ class Connect4Game {
         return div.innerHTML;
     }
 
-    // Leaderboard functions
-    showLeaderboard(data) {
-        const content = document.getElementById('leaderboard-content');
+    // Comprehensive Leaderboard Functions
+    showComprehensiveLeaderboard(data) {
+        // Store the data for tab switching
+        this.leaderboardData = data;
         
-        if (data.length === 0) {
-            content.innerHTML = '<p class="no-data">No games played yet!</p>';
-        } else {
-            let html = '<div class="leaderboard-table">';
-            html += '<div class="leaderboard-header">';
-            html += '<span>Rank</span><span>Player</span><span>Wins</span><span>Win Rate</span>';
-            html += '</div>';
-            
-            data.forEach((player, index) => {
-                const rank = index + 1;
-                const trophy = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-                html += `<div class="leaderboard-row ${player.name === this.myPlayerName ? 'highlight' : ''}">`;
-                html += `<span class="rank">${trophy}</span>`;
-                html += `<span class="player">${this.escapeHtml(player.name)}</span>`;
-                html += `<span class="wins">${player.wins}</span>`;
-                html += `<span class="win-rate">${player.winRate}%</span>`;
-                html += '</div>';
-            });
-            html += '</div>';
-            content.innerHTML = html;
+        // Populate all tabs
+        this.populatePlayersTab(data.players);
+        this.populateCPUTab(data.cpuOpponents);
+        this.populateGameStatsTab(data.players);
+        
+        // Show the modal
+        document.getElementById('leaderboard-modal').classList.remove('hidden');
+    }
+    
+    switchLeaderboardTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+    
+    populatePlayersTab(players) {
+        const container = document.getElementById('overall-leaderboard');
+        
+        if (!players || players.length === 0) {
+            container.innerHTML = '<p class="no-data">No games played yet!</p>';
+            return;
         }
         
-        document.getElementById('leaderboard-modal').classList.remove('hidden');
+        let html = '<table class="leaderboard-table">';
+        html += '<thead><tr>';
+        html += '<th>Rank</th><th>Player</th><th>Total Wins</th><th>Total Games</th><th>Win Rate</th>';
+        html += '<th>Connect 4</th><th>Checkers</th>';
+        html += '</tr></thead><tbody>';
+        
+        players.forEach((player, index) => {
+            const rank = index + 1;
+            const rankClass = rank <= 3 ? `rank-${rank}` : '';
+            const trophy = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+            
+            // Get game-specific stats
+            const connect4Stats = player.games?.connect4?.overall || { wins: 0, games: 0 };
+            const checkersStats = player.games?.checkers?.overall || { wins: 0, games: 0 };
+            
+            const connect4WinRate = connect4Stats.games > 0 ? (connect4Stats.wins / connect4Stats.games * 100).toFixed(1) : '0.0';
+            const checkersWinRate = checkersStats.games > 0 ? (checkersStats.wins / checkersStats.games * 100).toFixed(1) : '0.0';
+            
+            // Determine win rate class
+            const winRateClass = this.getWinRateClass(parseFloat(player.overall.winRate));
+            
+            html += `<tr ${player.name === this.myPlayerName ? 'class="highlight"' : ''}>`;
+            html += `<td class="rank-cell ${rankClass}">${trophy}</td>`;
+            html += `<td class="player-cell">${this.escapeHtml(player.name)}</td>`;
+            html += `<td>${player.overall.wins}</td>`;
+            html += `<td>${player.overall.games}</td>`;
+            html += `<td class="win-rate ${winRateClass}">${player.overall.winRate}%</td>`;
+            html += `<td>${connect4Stats.wins}/${connect4Stats.games} (${connect4WinRate}%)</td>`;
+            html += `<td>${checkersStats.wins}/${checkersStats.games} (${checkersWinRate}%)</td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    populateCPUTab(cpuOpponents) {
+        const container = document.getElementById('cpu-leaderboard');
+        
+        if (!cpuOpponents || cpuOpponents.length === 0) {
+            container.innerHTML = '<p class="no-data">No CPU games played yet!</p>';
+            return;
+        }
+        
+        let html = '<table class="leaderboard-table">';
+        html += '<thead><tr>';
+        html += '<th>Rank</th><th>Horror Character</th><th>Total Wins</th><th>Win Rate</th>';
+        html += '<th>Easy</th><th>Medium</th><th>Hard</th>';
+        html += '</tr></thead><tbody>';
+        
+        cpuOpponents.forEach((cpu, index) => {
+            const rank = index + 1;
+            const rankClass = rank <= 3 ? `rank-${rank}` : '';
+            const trophy = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+            
+            const winRate = cpu.totalGames > 0 ? (cpu.totalWinsAgainst / cpu.totalGames * 100).toFixed(1) : '0.0';
+            const winRateClass = this.getWinRateClass(parseFloat(winRate));
+            
+            // Get the CSS class for this CPU character
+            const cpuClass = this.getCPUCSSClass(cpu.name);
+            
+            html += '<tr>';
+            html += `<td class="rank-cell ${rankClass}">${trophy}</td>`;
+            html += '<td>';
+            html += '<div class="cpu-opponent-row">';
+            html += `<div class="cpu-avatar ${cpuClass}"></div>`;
+            html += `<span class="cpu-name">${cpu.name}</span>`;
+            html += '</div>';
+            html += '</td>';
+            html += `<td>${cpu.totalWinsAgainst}</td>`;
+            html += `<td class="win-rate ${winRateClass}">${winRate}%</td>`;
+            html += `<td><span class="difficulty-badge difficulty-easy">${cpu.difficulties.easy.wins}/${cpu.difficulties.easy.games}</span></td>`;
+            html += `<td><span class="difficulty-badge difficulty-medium">${cpu.difficulties.medium.wins}/${cpu.difficulties.medium.games}</span></td>`;
+            html += `<td><span class="difficulty-badge difficulty-hard">${cpu.difficulties.hard.wins}/${cpu.difficulties.hard.games}</span></td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    populateGameStatsTab(players) {
+        // Connect 4 Stats
+        const connect4Container = document.getElementById('connect4-stats');
+        const connect4Stats = this.aggregateGameStats(players, 'connect4');
+        connect4Container.innerHTML = this.generateGameStatsHTML(connect4Stats);
+        
+        // Checkers Stats
+        const checkersContainer = document.getElementById('checkers-stats');
+        const checkersStats = this.aggregateGameStats(players, 'checkers');
+        checkersContainer.innerHTML = this.generateGameStatsHTML(checkersStats);
+    }
+    
+    aggregateGameStats(players, gameType) {
+        let totalGames = 0;
+        let multiplayerGames = 0;
+        let singleplayerGames = 0;
+        let easyGames = 0;
+        let mediumGames = 0;
+        let hardGames = 0;
+        
+        players.forEach(player => {
+            const gameStats = player.games?.[gameType];
+            if (gameStats) {
+                totalGames += gameStats.overall?.games || 0;
+                multiplayerGames += gameStats.multiplayer?.games || 0;
+                singleplayerGames += gameStats.singleplayer?.overall?.games || 0;
+                
+                if (gameStats.singleplayer?.difficulties) {
+                    easyGames += gameStats.singleplayer.difficulties.easy?.games || 0;
+                    mediumGames += gameStats.singleplayer.difficulties.medium?.games || 0;
+                    hardGames += gameStats.singleplayer.difficulties.hard?.games || 0;
+                }
+            }
+        });
+        
+        return {
+            totalGames,
+            multiplayerGames,
+            singleplayerGames,
+            easyGames,
+            mediumGames,
+            hardGames
+        };
+    }
+    
+    generateGameStatsHTML(stats) {
+        return `
+            <div class="stat-row">
+                <span class="stat-label">Total Games Played</span>
+                <span class="stat-value">${stats.totalGames}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Multiplayer Games</span>
+                <span class="stat-value">${stats.multiplayerGames}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Single Player Games</span>
+                <span class="stat-value">${stats.singleplayerGames}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Easy CPU Games</span>
+                <span class="stat-value">${stats.easyGames}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Medium CPU Games</span>
+                <span class="stat-value">${stats.mediumGames}</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Hard CPU Games</span>
+                <span class="stat-value">${stats.hardGames}</span>
+            </div>
+        `;
+    }
+    
+    getCPUCSSClass(cpuName) {
+        const classMap = {
+            'Freddy': 'cpu-freddy',
+            'Michael': 'cpu-michael',
+            'Jason': 'cpu-jason',
+            'Frankenstein': 'cpu-frank',
+            'Dracula': 'cpu-drac',
+            'The Exorcist': 'cpu-exorcist',
+            'Creature': 'cpu-creature',
+            'Chainsaw': 'cpu-chainsaw',
+            'The Mummy': 'cpu-mummy',
+            'The Nun': 'cpu-nun',
+            'Hellraiser': 'cpu-hellraiser'
+        };
+        
+        return classMap[cpuName] || 'cpu-freddy'; // fallback
+    }
+    
+    getWinRateClass(winRate) {
+        if (winRate >= 80) return 'excellent';
+        if (winRate >= 65) return 'good';
+        if (winRate >= 50) return 'average';
+        return 'poor';
+    }
+    
+    // Legacy support for old leaderboard
+    showLeaderboard(data) {
+        // Convert old format to new format for backward compatibility
+        const fakeComprehensiveData = {
+            players: data,
+            cpuOpponents: []
+        };
+        this.showComprehensiveLeaderboard(fakeComprehensiveData);
     }
 
     hideLeaderboardModal() {
@@ -2309,6 +2626,27 @@ class Connect4Game {
             chosenMove.piece.classList.add('king');
             console.log('🤖 CPU piece promoted to King!');
         }
+
+        // Check for win condition after CPU move
+        const winner = this.checkCheckersWin();
+        if (winner) {
+            this.gameActive = false;
+            this.sounds.win.play();
+            
+            console.log(`🏆 Checkers game won by ${winner}!`);
+            const isPlayerWin = winner === 'red';
+            
+            // Track CPU game result
+            this.trackCPUGameResult(isPlayerWin, 'checkers');
+            
+            this.showModal(
+                isPlayerWin ? '🎉 You Won!' : '😔 You Lost!',
+                isPlayerWin ? 
+                    'Congratulations! You won the checkers game!' : 
+                    `${this.currentCpuCharacter?.name || 'CPU'} won the checkers game. Better luck next time!`
+            );
+            return;
+        }
         
         // Switch back to human player
         this.currentPlayer = 'red';
@@ -2464,6 +2802,25 @@ class Connect4Game {
         const atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) <= 1;
         el.classList.toggle('has-top-shadow', !atTop);
         el.classList.toggle('has-bottom-shadow', !atBottom);
+    }
+    
+    // Track CPU game results for comprehensive stats
+    trackCPUGameResult(isWinner, gameType = null) {
+        if (!this.socket || !this.myPlayerName) return;
+        
+        // Get current game info
+        const currentGameType = gameType || this.gameType || 'connect4';
+        const difficulty = this.cpuDifficulty || 'medium';
+        const opponent = this.currentCpuCharacter ? this.currentCpuCharacter.name : 'Unknown';
+        
+        // Send stats to server
+        this.socket.emit('trackCPUGameResult', {
+            playerName: this.myPlayerName,
+            won: isWinner,
+            gameType: currentGameType,
+            difficulty: difficulty,
+            opponent: opponent
+        });
     }
 }
 

@@ -10,7 +10,31 @@ All notable changes to this project will be documented in this file. Dates use U
 - Optional QR code generator for invite link.
 - Configurable CPU difficulty levels.
 
-## [2.1.0] - 2025-09-07 - "Expanded Horror CPU Collection"
+## [2.2.0] - 2025-09-07 - "Comprehensive Leaderboard System"
+### Added
+- **🏆 Multi-Tab Leaderboard**: Three comprehensive tabs - Players, Horror Opponents, and Game Statistics
+- **📊 Advanced Stats Tracking**: Granular statistics per game type, difficulty level, and specific CPU opponent
+- **🎪 Horror Opponent Hall of Fame**: Visual leaderboard featuring all 11 horror characters with their avatars
+- **🎮 Game-Specific Analytics**: Separate tracking for Connect 4 and Checkers with detailed breakdowns
+- **🏅 Difficulty-Based Records**: Easy/Medium/Hard CPU opponent statistics with visual badges
+- **📈 Win Rate Analytics**: Color-coded win rates (excellent/good/average/poor) for easy assessment
+- **🎯 Individual Opponent Tracking**: Detailed records against each horror character (Freddy, Michael, Jason, etc.)
+- **💾 Server-Side Stat Aggregation**: Comprehensive backend processing for complex stat calculations
+
+### Enhanced
+- **🎨 Professional UI Design**: Modern tabbed interface with responsive tables and hover effects
+- **📱 Mobile Optimization**: Fully responsive design that works perfectly on all screen sizes
+- **🔧 Backward Compatibility**: Seamlessly handles existing player stats while adding new features
+- **⚡ Real-Time Updates**: Live stat tracking for CPU games with immediate leaderboard updates
+
+### Technical Implementation
+- Enhanced `updatePlayerStats()` function with comprehensive parameter support
+- New `getCPUOpponentStats()` aggregation function for horror character analytics
+- Socket events for `getComprehensiveLeaderboard` and `trackCPUGameResult`
+- Advanced CSS styling with professional table layouts and visual indicators
+- Tab switching functionality with persistent data storage
+
+## [2.1.1] - 2025-09-07 - "Complete Horror CPU Collection"
 ### Added
 - **🎪 6 New Horror CPU Characters**: Added Frankenstein, Dracula, The Exorcist, Creature, Chainsaw, and The Mummy
 - **🎯 Enhanced Random Selection**: CPU opponents now randomly selected from 9 iconic horror characters

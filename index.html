@@ -221,13 +221,52 @@
         </div>
     </div>
 
-    <!-- Unified Modal: Leaderboard -->
+    <!-- Comprehensive Leaderboard Modal -->
     <div id="leaderboard-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
-        <div class="modal-content modal-base">
+        <div class="modal-content modal-large">
             <header class="modal-header">
-                <h2 id="leaderboard-title">🏆 Top 10 Leaderboard</h2>
+                <h2 id="leaderboard-title">🏆 Comprehensive Leaderboard</h2>
+                <div class="leaderboard-tabs">
+                    <button id="tab-players" class="tab-btn active" data-tab="players">👥 Players</button>
+                    <button id="tab-cpu" class="tab-btn" data-tab="cpu">🎪 Horror Opponents</button>
+                    <button id="tab-games" class="tab-btn" data-tab="games">🎮 Game Stats</button>
+                </div>
             </header>
-            <div class="modal-body" id="leaderboard-content"></div>
+            <div class="modal-body" id="leaderboard-content">
+                <!-- Players Tab -->
+                <div id="players-tab" class="tab-content active">
+                    <div class="leaderboard-section">
+                        <h3>🏆 Overall Rankings</h3>
+                        <div id="overall-leaderboard"></div>
+                    </div>
+                </div>
+                
+                <!-- CPU Opponents Tab -->
+                <div id="cpu-tab" class="tab-content">
+                    <div class="leaderboard-section">
+                        <h3>🎪 Horror Opponent Hall of Fame</h3>
+                        <p class="section-description">See which horror characters are the most formidable opponents</p>
+                        <div id="cpu-leaderboard"></div>
+                    </div>
+                </div>
+                
+                <!-- Game Stats Tab -->
+                <div id="games-tab" class="tab-content">
+                    <div class="leaderboard-section">
+                        <h3>🎮 Game Type Statistics</h3>
+                        <div class="game-stats-container">
+                            <div class="game-stat-card">
+                                <h4>🔴 Connect 4</h4>
+                                <div id="connect4-stats"></div>
+                            </div>
+                            <div class="game-stat-card">
+                                <h4>🏁 Checkers</h4>
+                                <div id="checkers-stats"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <footer class="modal-footer" data-footer="leaderboard">
                 <button id="leaderboard-close" class="btn primary-action">Close</button>
             </footer>

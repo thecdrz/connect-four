@@ -1,6 +1,6 @@
 {
   "name": "graces-games",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "A multiplayer gaming platform featuring Connect 4 and Checkers with real-time chat, CPU AI, and comprehensive features",
   "main": "server.js",
   "scripts": {

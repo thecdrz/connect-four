@@ -77,40 +77,167 @@ async function savePlayerStats() {
     }
 }
 
-// Update player stats
-function updatePlayerStats(playerName, won) {
+// Update player stats - Enhanced for comprehensive tracking
+function updatePlayerStats(playerName, won, gameType = 'connect4', gameMode = 'multiplayer', opponent = null, difficulty = null) {
     if (!playerStats[playerName]) {
-        playerStats[playerName] = { wins: 0, losses: 0, games: 0 };
+        playerStats[playerName] = {
+            overall: { wins: 0, losses: 0, games: 0 },
+            games: {}
+        };
     }
     
-    playerStats[playerName].games++;
+    // Update overall stats
+    playerStats[playerName].overall.games++;
     if (won) {
-        playerStats[playerName].wins++;
+        playerStats[playerName].overall.wins++;
     } else {
-        playerStats[playerName].losses++;
+        playerStats[playerName].overall.losses++;
+    }
+    
+    // Initialize game type if it doesn't exist
+    if (!playerStats[playerName].games[gameType]) {
+        playerStats[playerName].games[gameType] = {
+            overall: { wins: 0, losses: 0, games: 0 },
+            multiplayer: { wins: 0, losses: 0, games: 0 },
+            singleplayer: {
+                overall: { wins: 0, losses: 0, games: 0 },
+                difficulties: {
+                    easy: { wins: 0, losses: 0, games: 0, opponents: {} },
+                    medium: { wins: 0, losses: 0, games: 0, opponents: {} },
+                    hard: { wins: 0, losses: 0, games: 0, opponents: {} }
+                }
+            }
+        };
+    }
+    
+    const gameStats = playerStats[playerName].games[gameType];
+    
+    // Update game-specific overall stats
+    gameStats.overall.games++;
+    if (won) {
+        gameStats.overall.wins++;
+    } else {
+        gameStats.overall.losses++;
+    }
+    
+    // Update mode-specific stats
+    if (gameMode === 'multiplayer') {
+        gameStats.multiplayer.games++;
+        if (won) {
+            gameStats.multiplayer.wins++;
+        } else {
+            gameStats.multiplayer.losses++;
+        }
+    } else if (gameMode === 'cpu' && difficulty && opponent) {
+        const diffStats = gameStats.singleplayer.difficulties[difficulty];
+        
+        // Update difficulty stats
+        diffStats.games++;
+        if (won) {
+            diffStats.wins++;
+        } else {
+            diffStats.losses++;
+        }
+        
+        // Update opponent-specific stats
+        if (!diffStats.opponents[opponent]) {
+            diffStats.opponents[opponent] = { wins: 0, losses: 0, games: 0 };
+        }
+        
+        diffStats.opponents[opponent].games++;
+        if (won) {
+            diffStats.opponents[opponent].wins++;
+        } else {
+            diffStats.opponents[opponent].losses++;
+        }
+        
+        // Update singleplayer overall
+        gameStats.singleplayer.overall.games++;
+        if (won) {
+            gameStats.singleplayer.overall.wins++;
+        } else {
+            gameStats.singleplayer.overall.losses++;
+        }
     }
     
     savePlayerStats();
 }
 
-// Get top 10 leaderboard
+// Get comprehensive leaderboard data
 function getLeaderboard() {
     const players = Object.entries(playerStats)
-        .map(([name, stats]) => ({
-            name,
-            wins: stats.wins,
-            losses: stats.losses,
-            games: stats.games,
-            winRate: stats.games > 0 ? (stats.wins / stats.games * 100).toFixed(1) : 0
-        }))
-        .sort((a, b) => {
-            // Sort by wins first, then by win rate
-            if (b.wins !== a.wins) return b.wins - a.wins;
-            return parseFloat(b.winRate) - parseFloat(a.winRate);
+        .map(([name, stats]) => {
+            // Handle both old and new stat formats
+            const overallStats = stats.overall || stats;
+            
+            return {
+                name,
+                overall: {
+                    wins: overallStats.wins || 0,
+                    losses: overallStats.losses || 0,
+                    games: overallStats.games || 0,
+                    winRate: overallStats.games > 0 ? (overallStats.wins / overallStats.games * 100).toFixed(1) : 0
+                },
+                games: stats.games || {}
+            };
         })
-        .slice(0, 10);
+        .sort((a, b) => {
+            // Sort by overall wins first, then by win rate
+            if (b.overall.wins !== a.overall.wins) return b.overall.wins - a.overall.wins;
+            return parseFloat(b.overall.winRate) - parseFloat(a.overall.winRate);
+        })
+        .slice(0, 20); // Top 20 for comprehensive display
     
     return players;
+}
+
+// Get CPU opponent leaderboard data
+function getCPUOpponentStats() {
+    const cpuStats = {};
+    
+    Object.entries(playerStats).forEach(([playerName, stats]) => {
+        if (stats.games) {
+            ['connect4', 'checkers'].forEach(gameType => {
+                if (stats.games[gameType] && stats.games[gameType].singleplayer) {
+                    const spStats = stats.games[gameType].singleplayer.difficulties;
+                    
+                    ['easy', 'medium', 'hard'].forEach(difficulty => {
+                        if (spStats[difficulty] && spStats[difficulty].opponents) {
+                            Object.entries(spStats[difficulty].opponents).forEach(([opponent, oppStats]) => {
+                                if (!cpuStats[opponent]) {
+                                    cpuStats[opponent] = {
+                                        name: opponent,
+                                        totalGames: 0,
+                                        totalWinsAgainst: 0,
+                                        difficulties: {
+                                            easy: { games: 0, wins: 0, losses: 0 },
+                                            medium: { games: 0, wins: 0, losses: 0 },
+                                            hard: { games: 0, wins: 0, losses: 0 }
+                                        },
+                                        games: {
+                                            connect4: { games: 0, wins: 0, losses: 0 },
+                                            checkers: { games: 0, wins: 0, losses: 0 }
+                                        }
+                                    };
+                                }
+                                
+                                cpuStats[opponent].totalGames += oppStats.games;
+                                cpuStats[opponent].totalWinsAgainst += oppStats.losses; // Player losses = CPU wins
+                                cpuStats[opponent].difficulties[difficulty].games += oppStats.games;
+                                cpuStats[opponent].difficulties[difficulty].wins += oppStats.losses;
+                                cpuStats[opponent].difficulties[difficulty].losses += oppStats.wins;
+                                cpuStats[opponent].games[gameType].games += oppStats.games;
+                                cpuStats[opponent].games[gameType].wins += oppStats.losses;
+                                cpuStats[opponent].games[gameType].losses += oppStats.wins;
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    return Object.values(cpuStats).sort((a, b) => b.totalWinsAgainst - a.totalWinsAgainst);
 }
 
 // Initialize stats on startup
@@ -197,9 +324,9 @@ class Connect4Game {
             const winnerName = this.players.find(p => p.playerNumber === playerNumber)?.name;
             const loserName = this.players.find(p => p.playerNumber !== playerNumber)?.name;
             
-            // Update player stats
-            if (winnerName) updatePlayerStats(winnerName, true);
-            if (loserName) updatePlayerStats(loserName, false);
+            // Update player stats with game type
+            if (winnerName) updatePlayerStats(winnerName, true, 'connect4', 'multiplayer');
+            if (loserName) updatePlayerStats(loserName, false, 'connect4', 'multiplayer');
             
             this._finished = true;
             this._winner = playerNumber;
@@ -217,7 +344,7 @@ class Connect4Game {
             
             // Update stats for both players (no winner in draw)
             this.players.forEach(player => {
-                if (player.name) updatePlayerStats(player.name, false);
+                if (player.name) updatePlayerStats(player.name, false, 'connect4', 'multiplayer');
             });
             
             this._finished = true;
@@ -617,6 +744,22 @@ io.on('connection', (socket) => {
     // Get leaderboard
     socket.on('getLeaderboard', () => {
         socket.emit('leaderboard', getLeaderboard());
+    });
+    
+    // Get comprehensive leaderboard data
+    socket.on('getComprehensiveLeaderboard', () => {
+        socket.emit('comprehensiveLeaderboard', {
+            players: getLeaderboard(),
+            cpuOpponents: getCPUOpponentStats()
+        });
+    });
+    
+    // Handle CPU game result tracking
+    socket.on('trackCPUGameResult', ({ playerName, won, gameType, difficulty, opponent }) => {
+        if (playerName && gameType && difficulty && opponent) {
+            updatePlayerStats(playerName, won, gameType, 'cpu', opponent, difficulty);
+            console.log(`📊 Tracked CPU game: ${playerName} ${won ? 'won' : 'lost'} vs ${opponent} (${difficulty}) in ${gameType}`);
+        }
     });
 
     // Handle leaving a game
