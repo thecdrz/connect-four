@@ -385,6 +385,36 @@ main {
     background-color: #f1c40f; /* fallback yellow */
 }
 
+.player-indicator.cpu-frank {
+    background-image: url('../assets/Frank-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
+.player-indicator.cpu-drac {
+    background-image: url('../assets/Drac-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
+.player-indicator.cpu-exorcist {
+    background-image: url('../assets/Exorcist-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
+.player-indicator.cpu-creature {
+    background-image: url('../assets/Creature-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
+.player-indicator.cpu-chainsaw {
+    background-image: url('../assets/Chainsaw-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
+.player-indicator.cpu-mummy {
+    background-image: url('../assets/Mummy-CPU.png');
+    background-color: #f1c40f; /* fallback yellow */
+}
+
 .player.active .player-indicator {
     box-shadow: 0 0 15px rgba(52, 152, 219, 0.8);
     border-color: #3498db;

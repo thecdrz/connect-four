@@ -10,6 +10,24 @@ All notable changes to this project will be documented in this file. Dates use U
 - Optional QR code generator for invite link.
 - Configurable CPU difficulty levels.
 
+## [2.1.0] - 2025-09-07 - "Expanded Horror CPU Collection"
+### Added
+- **🎪 6 New Horror CPU Characters**: Added Frankenstein, Dracula, The Exorcist, Creature, Chainsaw, and The Mummy
+- **🎯 Enhanced Random Selection**: CPU opponents now randomly selected from 9 iconic horror characters
+- **🎨 Complete Avatar Collection**: Each character has custom avatar artwork and unique styling
+- **👹 Expanded Horror Theme**: Tripled the variety of CPU opponents for more engaging single-player experience
+
+### Enhanced
+- **🎮 CPU Variety**: Increased from 3 to 9 different horror-themed CPU opponents
+- **🎨 Visual Diversity**: More distinct character personalities and visual styles
+- **🎲 Randomization**: Better variety in repeated CPU games with larger character pool
+
+## [2.0.1] - 2025-09-07 - "Move Highlighting Fix"
+### Fixed
+- **🎯 Multiplayer Move Highlighting**: Fixed issue where Player 2 couldn't see green jump indicator highlights.
+- **🚀 Jump Detection**: Resolved problem where jump options over opponent pieces weren't showing for either player.
+- **🔧 Visual Feedback**: Move highlighting now works consistently in both single-player and multiplayer modes.
+
 ## [2.0.0] - 2025-09-07 - "Multi-Game Platform"
 ### Added
 - **🎯 Complete Checkers Game**: Full-featured checkers implementation with standard rules, king promotion, and double jump captures.

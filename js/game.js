@@ -869,55 +869,38 @@ class Connect4Game {
         // Target checkers board specifically to avoid conflicts
         const piece = document.querySelector(`#checkers-board [data-row="${row}"][data-col="${col}"] .checkers-piece`);
         if (!piece) {
-            console.log(`❌ No piece found at (${row},${col})`);
             return;
         }
         
         const isKing = piece.dataset.king === 'true';
         const color = piece.dataset.color;
         
-        console.log(`🎯 Highlighting moves for ${color} piece at (${row},${col}), isKing: ${isKing}`);
-        
         // Check all possible diagonal moves
         const directions = isKing ? 
             [[-1, -1], [-1, 1], [1, -1], [1, 1]] : // Kings can move in all directions
             color === 'red' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]; // Red moves up (negative), black moves down (positive)
         
-        console.log(`🧭 Movement directions:`, directions);
-        
         directions.forEach(([dRow, dCol]) => {
             // Check 1-square moves
             const newRow = row + dRow;
             const newCol = col + dCol;
-            console.log(`🔍 Checking 1-square move to (${newRow},${newCol})`);
             
             if (this.isValidPosition(newRow, newCol) && this.isValidCheckersMove(row, col, newRow, newCol)) {
                 const targetSquare = document.querySelector(`#checkers-board [data-row="${newRow}"][data-col="${newCol}"]`);
                 if (targetSquare) {
                     targetSquare.classList.add('possible-move');
-                    console.log(`✅ Added possible-move highlight to (${newRow},${newCol})`);
-                } else {
-                    console.log(`❌ Could not find target square at (${newRow},${newCol})`);
                 }
-            } else {
-                console.log(`❌ Invalid move to (${newRow},${newCol})`);
             }
             
             // Check 2-square moves (captures)
             const jumpRow = row + (dRow * 2);
             const jumpCol = col + (dCol * 2);
-            console.log(`🔍 Checking 2-square move to (${jumpRow},${jumpCol})`);
             
             if (this.isValidPosition(jumpRow, jumpCol) && this.isValidCheckersMove(row, col, jumpRow, jumpCol)) {
                 const targetSquare = document.querySelector(`#checkers-board [data-row="${jumpRow}"][data-col="${jumpCol}"]`);
                 if (targetSquare) {
                     targetSquare.classList.add('possible-move capture-move');
-                    console.log(`✅ Added capture-move highlight to (${jumpRow},${jumpCol})`);
-                } else {
-                    console.log(`❌ Could not find target square at (${jumpRow},${jumpCol})`);
                 }
-            } else {
-                console.log(`❌ Invalid capture to (${jumpRow},${jumpCol})`);
             }
         });
     }
@@ -933,44 +916,37 @@ class Connect4Game {
     }
 
     isValidCheckersMove(fromRow, fromCol, toRow, toCol) {
-        console.log(`🔍 Validating move from (${fromRow},${fromCol}) to (${toRow},${toCol})`);
+        // Basic move validation for checkers - get piece from actual position
+        const fromSquare = document.querySelector(`#checkers-board [data-row="${fromRow}"][data-col="${fromCol}"]`);
+        const piece = fromSquare?.querySelector('.checkers-piece');
         
-        // Basic move validation for checkers
-        const piece = this.selectedPiece.piece;
+        if (!piece) {
+            return false;
+        }
+        
         const isKing = piece.dataset.king === 'true';
         const color = piece.dataset.color;
         
-        console.log(`🔴 Piece color: ${color}, isKing: ${isKing}`);
-        
         // Check if destination is empty and on a dark square - TARGET CHECKERS BOARD SPECIFICALLY
         const toSquare = document.querySelector(`#checkers-board [data-row="${toRow}"][data-col="${toCol}"]`);
-        console.log(`🎯 Destination square:`, toSquare);
-        console.log(`🎯 Is dark square:`, toSquare?.classList.contains('dark'));
-        console.log(`🎯 Has piece:`, !!toSquare?.querySelector('.checkers-piece'));
         
         if (!toSquare || !toSquare.classList.contains('dark') || toSquare.querySelector('.checkers-piece')) {
-            console.log('❌ Invalid destination: not dark or occupied');
             return false;
         }
         
         const rowDiff = toRow - fromRow;
         const colDiff = Math.abs(toCol - fromCol);
         
-        console.log(`📏 Row difference: ${rowDiff}, Column difference: ${colDiff}`);
-        
         // Regular pieces can only move diagonally forward
         if (!isKing) {
             const correctDirection = (color === 'red' && rowDiff < 0) || (color === 'black' && rowDiff > 0);
-            console.log(`🧭 Correct direction for ${color}: ${correctDirection} (rowDiff: ${rowDiff})`);
             if (!correctDirection) {
-                console.log('❌ Wrong direction for non-king piece');
                 return false;
             }
         }
         
         // Check for simple move (1 square diagonally)
         if (Math.abs(rowDiff) === 1 && colDiff === 1) {
-            console.log('✅ Valid simple diagonal move');
             return true;
         }
         
@@ -1834,7 +1810,13 @@ class Connect4Game {
         const cpuCharacters = [
             { name: 'Freddy', cssClass: 'cpu-freddy' },
             { name: 'Michael', cssClass: 'cpu-michael' },
-            { name: 'Jason', cssClass: 'cpu-jason' }
+            { name: 'Jason', cssClass: 'cpu-jason' },
+            { name: 'Frankenstein', cssClass: 'cpu-frank' },
+            { name: 'Dracula', cssClass: 'cpu-drac' },
+            { name: 'The Exorcist', cssClass: 'cpu-exorcist' },
+            { name: 'Creature', cssClass: 'cpu-creature' },
+            { name: 'Chainsaw', cssClass: 'cpu-chainsaw' },
+            { name: 'The Mummy', cssClass: 'cpu-mummy' }
         ];
         this.currentCpuCharacter = cpuCharacters[Math.floor(Math.random() * cpuCharacters.length)];
         

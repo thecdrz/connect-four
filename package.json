@@ -1,13 +1,13 @@
 {
-  "name": "connect4-game",
-  "version": "1.1.0",
-  "description": "A multiplayer Connect 4 game that can be played in the browser over the internet",
+  "name": "graces-games",
+  "version": "2.1.0",
+  "description": "A multiplayer gaming platform featuring Connect 4 and Checkers with real-time chat, CPU AI, and comprehensive features",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": ["connect4", "game", "multiplayer", "websocket", "nodejs"],
+  "keywords": ["connect4", "checkers", "game", "multiplayer", "websocket", "nodejs", "platform"],
   "author": "",
   "license": "MIT",
   "dependencies": {

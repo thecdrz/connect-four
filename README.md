@@ -14,7 +14,7 @@ Full-featured checkers implementation with:
 - **Standard Rules**: Move diagonally on dark squares, capture by jumping
 - **King Promotion**: Pieces become kings when reaching the opposite end
 - **Double Jumps**: Continue capturing in the same turn when possible
-- **Visual Feedback**: Green highlights for possible moves, red for captures
+- **Visual Feedback**: Green highlights for possible moves, red for captures (works perfectly in multiplayer!)
 - **Smart CPU AI**: Prioritizes captures and strategic positioning
 - **Audio Cues**: Sound effects for piece selection, moves, and captures
 
@@ -30,7 +30,8 @@ Full-featured checkers implementation with:
 - 💬 **In-Game Chat:** Real-time messaging plus a subtle **typing indicator** for better conversational flow.
 - 🧑‍🤝‍🧑 **Character Avatars:** Illustrated player tokens with active-turn glow (accessibility-friendly highlight).
 - 🧠 **CPU Mode:** Single-player with 3 difficulty levels for Connect 4 - Easy (random), Medium (strategic), Hard (minimax AI). Intelligent CPU for Checkers with capture prioritization.
-- 🎯 **Adaptive AI:** CPU difficulties scale from beginner-friendly random moves to expert-level minimax algorithm with alpha-beta pruning.
+- � **Horror CPU Collection:** 9 iconic horror characters as CPU opponents - Freddy, Michael, Jason, Frankenstein, Dracula, The Exorcist, Creature, Chainsaw, and The Mummy.
+- �🎯 **Adaptive AI:** CPU difficulties scale from beginner-friendly random moves to expert-level minimax algorithm with alpha-beta pruning.
 - 🔄 **Rematch Flow:** Post-game rematch button with vote sync (starts when both players agree).
 - � **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
 - 🗂️ **Name Persistence:** Recently used player name auto-fills when opening an invite link.
