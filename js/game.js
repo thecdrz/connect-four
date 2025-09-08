@@ -868,31 +868,56 @@ class Connect4Game {
         
         // Target checkers board specifically to avoid conflicts
         const piece = document.querySelector(`#checkers-board [data-row="${row}"][data-col="${col}"] .checkers-piece`);
-        if (!piece) return;
+        if (!piece) {
+            console.log(`❌ No piece found at (${row},${col})`);
+            return;
+        }
         
         const isKing = piece.dataset.king === 'true';
         const color = piece.dataset.color;
+        
+        console.log(`🎯 Highlighting moves for ${color} piece at (${row},${col}), isKing: ${isKing}`);
         
         // Check all possible diagonal moves
         const directions = isKing ? 
             [[-1, -1], [-1, 1], [1, -1], [1, 1]] : // Kings can move in all directions
             color === 'red' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]; // Red moves up (negative), black moves down (positive)
         
+        console.log(`🧭 Movement directions:`, directions);
+        
         directions.forEach(([dRow, dCol]) => {
             // Check 1-square moves
             const newRow = row + dRow;
             const newCol = col + dCol;
+            console.log(`🔍 Checking 1-square move to (${newRow},${newCol})`);
+            
             if (this.isValidPosition(newRow, newCol) && this.isValidCheckersMove(row, col, newRow, newCol)) {
                 const targetSquare = document.querySelector(`#checkers-board [data-row="${newRow}"][data-col="${newCol}"]`);
-                if (targetSquare) targetSquare.classList.add('possible-move');
+                if (targetSquare) {
+                    targetSquare.classList.add('possible-move');
+                    console.log(`✅ Added possible-move highlight to (${newRow},${newCol})`);
+                } else {
+                    console.log(`❌ Could not find target square at (${newRow},${newCol})`);
+                }
+            } else {
+                console.log(`❌ Invalid move to (${newRow},${newCol})`);
             }
             
             // Check 2-square moves (captures)
             const jumpRow = row + (dRow * 2);
             const jumpCol = col + (dCol * 2);
+            console.log(`🔍 Checking 2-square move to (${jumpRow},${jumpCol})`);
+            
             if (this.isValidPosition(jumpRow, jumpCol) && this.isValidCheckersMove(row, col, jumpRow, jumpCol)) {
                 const targetSquare = document.querySelector(`#checkers-board [data-row="${jumpRow}"][data-col="${jumpCol}"]`);
-                if (targetSquare) targetSquare.classList.add('possible-move capture-move');
+                if (targetSquare) {
+                    targetSquare.classList.add('possible-move capture-move');
+                    console.log(`✅ Added capture-move highlight to (${jumpRow},${jumpCol})`);
+                } else {
+                    console.log(`❌ Could not find target square at (${jumpRow},${jumpCol})`);
+                }
+            } else {
+                console.log(`❌ Invalid capture to (${jumpRow},${jumpCol})`);
             }
         });
     }

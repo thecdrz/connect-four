@@ -10,6 +10,36 @@ All notable changes to this project will be documented in this file. Dates use U
 - Optional QR code generator for invite link.
 - Configurable CPU difficulty levels.
 
+## [2.0.0] - 2025-09-07 - "Multi-Game Platform"
+### Added
+- **🎯 Complete Checkers Game**: Full-featured checkers implementation with standard rules, king promotion, and double jump captures.
+- **🎮 Multi-Game Platform**: Seamless switching between Connect 4 and Checkers with dynamic board layouts and game-specific UI.
+- **🎨 Dynamic Branding**: Logo switches automatically (Grace for Checkers, Connect 4 logo for Connect 4).
+- **🔊 Game-Specific Audio**: Distinct sound effects for checkers (piece selection, moves, captures) and enhanced Connect 4 audio.
+- **🤖 Intelligent Checkers CPU**: AI that prioritizes captures and makes strategic moves with smart positioning.
+- **✨ Visual Feedback System**: Green highlights for possible moves, red highlights for capture opportunities.
+- **👑 King Promotion**: Automatic king promotion when pieces reach the opposite end with visual crown indicators.
+- **🎯 Double Jump Mechanics**: Forced continued captures when additional jumps are available.
+- **🎪 Horror CPU Characters**: Random selection of Freddy Krueger, Michael Myers, and Jason Voorhees for CPU opponents.
+- **🌐 Complete Multiplayer Support**: Full online multiplayer for checkers with real-time synchronization.
+
+### Enhanced
+- **🔊 Rich Audio System**: Expanded from simple beeps to comprehensive game-specific sound effects.
+- **🎨 Visual Polish**: Enhanced piece selection highlighting, move indicators, and board transitions.
+- **🧠 CPU AI**: Upgraded from Connect 4-only to multi-game AI system with game-specific strategies.
+- **📱 Responsive Design**: Optimized layouts for both Connect 4 and Checkers across all screen sizes.
+
+### Fixed
+- **🎯 Capture Detection**: Resolved DOM selector conflicts between Connect 4 and Checkers boards.
+- **🔄 Turn Management**: Fixed multiplayer synchronization issues where players couldn't move or moves weren't visible.
+- **🎮 Game State**: Proper isolation between different game types and modes.
+- **🔊 Audio Conflicts**: Ensured audio cues play correctly for the active game type.
+
+### Changed
+- Platform rebranded from "Connect 4 Game" to "Grace's Games" to reflect multi-game nature.
+- Enhanced server architecture to handle multiple game types with proper state management.
+- Improved client-side game logic with better separation of concerns between game types.
+
 ## [1.2.0] - 2025-09-07
 ### Added
 - **Spectator Mode**: Watch any in-progress game in real-time with live board updates, turn status, and read-only chat history.

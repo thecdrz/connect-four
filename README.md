@@ -1,14 +1,27 @@
-# Connect 4 - Onl- 🔄 **Rematch Flow:** Post-game rematch button with vote sync (starts when both players agree).
-- 📊 **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
-- 🗂️ **Name Persistence:** Recently used player name auto-fills when opening an invite link. Multiplayer Game
+# Grace's Games - Multiplayer Game Platform
 
-A real-time, browser-based multiplayer Connect 4 game built with Node.js and Socket.IO. This project features a clean user interface, real-time chat (with typing indicator), character avatars, invite links, rematches, and a persistent leaderboard.
+A real-time, browser-based multiplayer gaming platform featuring **Connect 4** and **Checkers** built with Node.js and Socket.IO. This project features clean user interfaces, real-time chat (with typing indicator), character avatars, invite links, rematches, and a persistent leaderboard.
 
 **🚀 Live Demo: [cdrz.app](https://cdrz.app)**
 
+## Games Available
+
+### 🔴 Connect 4
+Classic Connect 4 gameplay with modern multiplayer features.
+
+### 🏁 Checkers  
+Full-featured checkers implementation with:
+- **Standard Rules**: Move diagonally on dark squares, capture by jumping
+- **King Promotion**: Pieces become kings when reaching the opposite end
+- **Double Jumps**: Continue capturing in the same turn when possible
+- **Visual Feedback**: Green highlights for possible moves, red for captures
+- **Smart CPU AI**: Prioritizes captures and strategic positioning
+- **Audio Cues**: Sound effects for piece selection, moves, and captures
+
 ## Features
 
-- 🎮 **Real-time Multiplayer:** Private online games with low-latency moves via Socket.IO.
+- 🎮 **Real-time Multiplayer:** Private online games with low-latency moves via Socket.IO for both Connect 4 and Checkers.
+- 🎯 **Multi-Game Platform:** Seamlessly switch between Connect 4 and Checkers with dynamic board switching and game-specific UI.
 - 🗂️ **Live Lobby:** Auto‑updating list of active games with host/opponent status and join availability.
 - 👀 **Spectator Mode:** Watch any in‑progress game in real time (read‑only chat, live board & turn status).
 - 🚪 **Stop Watching:** Instantly exit a spectated game; board clears and lobby actions return.
@@ -16,7 +29,7 @@ A real-time, browser-based multiplayer Connect 4 game built with Node.js and Soc
 - 🔗 **One‑Click Sharing:** Copy Link & Copy Code buttons surface immediately after creating/joining a game.
 - 💬 **In-Game Chat:** Real-time messaging plus a subtle **typing indicator** for better conversational flow.
 - 🧑‍🤝‍🧑 **Character Avatars:** Illustrated player tokens with active-turn glow (accessibility-friendly highlight).
-- 🧠 **CPU Mode:** Single-player with 3 difficulty levels - Easy (random), Medium (strategic), Hard (minimax AI).
+- 🧠 **CPU Mode:** Single-player with 3 difficulty levels for Connect 4 - Easy (random), Medium (strategic), Hard (minimax AI). Intelligent CPU for Checkers with capture prioritization.
 - 🎯 **Adaptive AI:** CPU difficulties scale from beginner-friendly random moves to expert-level minimax algorithm with alpha-beta pruning.
 - 🔄 **Rematch Flow:** Post-game rematch button with vote sync (starts when both players agree).
 - � **Persistent Leaderboard:** Tracks wins, games played, and win rate across sessions.
@@ -25,17 +38,33 @@ A real-time, browser-based multiplayer Connect 4 game built with Node.js and Soc
 - 🛡️ **Integrity Guards:** A single browser tab cannot join/create a second game or self‑occupy both seats; spectators cannot trigger player actions.
 - 🧭 **Adaptive Sidebar Layout:** Dynamic height algorithm prevents chat/lobby from extending below the board on desktop.
 - 🎨 **Modern & Responsive UI:** Board + chat stay side-by-side on desktop; adaptive stacking for tablets & mobile.
-- ✨ **Polished Feedback:** Animated piece drops, winning pulse, hover micro‑interactions, active avatar glow.
-- 🔊 **Sound Effects:** Lightweight generated audio cues (drop, win, connect, chat) with toggle.
+- ✨ **Polished Feedback:** Animated piece drops, winning pulse, hover micro‑interactions, active avatar glow, piece selection highlighting.
+- 🔊 **Rich Audio:** Game-specific sound effects including piece drops, moves, captures, and selection feedback with toggle control.
+- 🎨 **Dynamic Branding:** Logo switches based on selected game (Grace for Checkers, Connect 4 logo for Connect 4).
 - 🛠️ **Straightforward Deployment:** No build step; deploy directly to Render / any Node host.
 
 ## How to Play
 
-1. **Start a Game**: Click **New Online Game** (or play vs CPU with the CPU button).
-2. **Invite a Friend**: Use Copy Link (auto-join deep link) or Copy Code from the status panel.
-3. **They Join**: Your friend opens the link (room + host pre-filled) or clicks Join Online Game and enters the code.
-4. **Chat & Play**: Turns alternate. First to connect four horizontally, vertically, or diagonally wins.
-5. **Rematch**: After Game Over both players can request a rematch—starts automatically once both vote.
+### Getting Started
+1. **Choose Your Game**: Select either **Connect 4** or **Checkers** using the game type buttons.
+2. **Start a Game**: Click **New Online Game** (or play vs CPU with the CPU button).
+3. **Invite a Friend**: Use Copy Link (auto-join deep link) or Copy Code from the status panel.
+4. **They Join**: Your friend opens the link (room + host pre-filled) or clicks Join Online Game and enters the code.
+
+### Connect 4 Rules
+- **Goal**: First to connect four pieces horizontally, vertically, or diagonally wins.
+- **Gameplay**: Turns alternate. Drop pieces into columns.
+
+### Checkers Rules  
+- **Goal**: Capture all opponent pieces or block all their moves.
+- **Movement**: Move diagonally on dark squares only.
+- **Capturing**: Jump diagonally over opponent pieces to capture them.
+- **Kings**: Pieces reaching the opposite end become kings (can move in all directions).
+- **Double Jumps**: If you can capture again after a jump, you must continue.
+- **Visual Aids**: Green squares show possible moves, red squares show capture opportunities.
+
+5. **Chat & Play**: Use the chat to communicate during gameplay.
+6. **Rematch**: After Game Over both players can request a rematch—starts automatically once both vote.
 
 > Tip: The active player's avatar glows. The room code lives in the status panel above the chat so it's easy to copy and share.
 
